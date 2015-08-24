@@ -2,10 +2,6 @@ package org.md2k.plotter;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.CheckBox;
@@ -20,17 +16,17 @@ import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYStepMode;
 
+import org.md2k.datakitapi.DataKitApi;
+import org.md2k.datakitapi.messagehandler.OnConnectionListener;
+import org.md2k.datakitapi.source.datasource.DataSourceClient;
+
 import java.text.DecimalFormat;
 import java.util.Arrays;
 
-// Monitor the phone's orientation sensor and plot the resulting azimuth pitch and roll values.
-// See: http://developer.android.com/reference/android/hardware/SensorEvent.html
-public class MainActivity extends Activity implements SensorEventListener
+public class ActivityPlot extends Activity
 {
 
     private static final int HISTORY_SIZE = 300;            // number of points to plot in history
-    private SensorManager sensorMgr = null;
-    private Sensor orSensor = null;
 
     private XYPlot aprHistoryPlot = null;
 
@@ -51,6 +47,7 @@ public class MainActivity extends Activity implements SensorEventListener
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        final DataSourceClient dataSourceClient= (DataSourceClient) getIntent().getSerializableExtra(DataSourceClient.class.getSimpleName());
 
         aLvlSeries = new SimpleXYSeries("A");
         pLvlSeries = new SimpleXYSeries("P");
@@ -59,6 +56,7 @@ public class MainActivity extends Activity implements SensorEventListener
 
         // setup the APR History plot:
         aprHistoryPlot = (XYPlot) findViewById(R.id.aprHistoryPlot);
+        aprHistoryPlot.setTitle(dataSourceClient.getDataSource().getType());
 
         azimuthHistorySeries = new SimpleXYSeries("Az.");
         azimuthHistorySeries.useImplicitXVals();
@@ -115,21 +113,6 @@ public class MainActivity extends Activity implements SensorEventListener
             }
         });
 
-        // register for orientation sensor events:
-        sensorMgr = (SensorManager) getApplicationContext().getSystemService(Context.SENSOR_SERVICE);
-        for (Sensor sensor : sensorMgr.getSensorList(Sensor.TYPE_ORIENTATION)) {
-            if (sensor.getType() == Sensor.TYPE_ORIENTATION) {
-                orSensor = sensor;
-            }
-        }
-
-        // if we can't access the orientation sensor then exit:
-        if (orSensor == null) {
-            System.out.println("Failed to attach to orSensor.");
-            cleanup();
-        }
-
-        sensorMgr.registerListener(this, orSensor, SensorManager.SENSOR_DELAY_UI);
 
         redrawer = new Redrawer(
                 Arrays.asList(new Plot[]{aprHistoryPlot}),
@@ -138,6 +121,15 @@ public class MainActivity extends Activity implements SensorEventListener
 
     @Override
     public void onResume() {
+        final DataKitApi dataKitApi=new DataKitApi(ActivityPlot.this);
+        dataKitApi.connect(new OnConnectionListener() {
+            @Override
+            public void onConnected() {
+//                dataKitApi.subscribe(dataSourceClient);
+
+            }
+        });
+
         super.onResume();
         redrawer.start();
     }
