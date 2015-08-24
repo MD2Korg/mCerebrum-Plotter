@@ -17,8 +17,13 @@ import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYStepMode;
 
 import org.md2k.datakitapi.DataKitApi;
+import org.md2k.datakitapi.datatype.DataType;
+import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
+import org.md2k.datakitapi.datatype.DataTypeFloatArray;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
+import org.md2k.datakitapi.messagehandler.OnReceiveListener;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
+import org.md2k.utilities.Report.Log;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -27,28 +32,74 @@ public class ActivityPlot extends Activity
 {
 
     private static final int HISTORY_SIZE = 300;            // number of points to plot in history
+    private static final String TAG = ActivityPlot.class.getSimpleName();
 
     private XYPlot aprHistoryPlot = null;
 
-    private CheckBox hwAcceleratedCb;
-    private CheckBox showFpsCb;
     //private SimpleXYSeries aprLevelsSeries = null;
     private SimpleXYSeries aLvlSeries;
     private SimpleXYSeries pLvlSeries;
     private SimpleXYSeries rLvlSeries;
-    private SimpleXYSeries azimuthHistorySeries = null;
-    private SimpleXYSeries pitchHistorySeries = null;
-    private SimpleXYSeries rollHistorySeries = null;
-
+    SimpleXYSeries rollHistorySeries;
+    SimpleXYSeries azimuthHistorySeries;
     private Redrawer redrawer;
-
+    DataSourceClient dataSourceClient;
+    DataKitApi dataKitApi;
+    SimpleXYSeries pitchHistorySeries;
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        final DataSourceClient dataSourceClient= (DataSourceClient) getIntent().getSerializableExtra(DataSourceClient.class.getSimpleName());
+        dataSourceClient= (DataSourceClient) getIntent().getSerializableExtra(DataSourceClient.class.getSimpleName());
+        preparePlot();
+    }
+    void plotAccelerometer(float [] samples){
+        if (rollHistorySeries.size() > HISTORY_SIZE) {
+            rollHistorySeries.removeFirst();
+            pitchHistorySeries.removeFirst();
+            azimuthHistorySeries.removeFirst();
+        }
 
+        // add the latest history sample:
+        azimuthHistorySeries.addLast(null, samples[0]);
+        pitchHistorySeries.addLast(null, samples[1]);
+        rollHistorySeries.addLast(null, samples[2]);
+
+    }
+
+    @Override
+    public void onResume() {
+        dataKitApi=new DataKitApi(ActivityPlot.this);
+        dataKitApi.connect(new OnConnectionListener() {
+            @Override
+            public void onConnected() {
+                boolean returned=dataKitApi.subscribe(dataSourceClient, new OnReceiveListener() {
+                    @Override
+                    public void onReceived(DataType dataType) {
+                        plotAccelerometer(((DataTypeFloatArray)dataType).getSample());
+                        Log.d(TAG,"ActivityPlot-> onReceived...");
+                    }
+                });
+                Log.d(TAG,"subscribe="+returned);
+            }
+        });
+        super.onResume();
+        redrawer.start();
+    }
+
+    @Override
+    public void onPause() {
+        redrawer.pause();
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        redrawer.finish();
+        super.onDestroy();
+    }
+    void preparePlot(){
         aLvlSeries = new SimpleXYSeries("A");
         pLvlSeries = new SimpleXYSeries("P");
         rLvlSeries = new SimpleXYSeries("R");
@@ -65,7 +116,7 @@ public class ActivityPlot extends Activity
         rollHistorySeries = new SimpleXYSeries("Roll");
         rollHistorySeries.useImplicitXVals();
 
-        aprHistoryPlot.setRangeBoundaries(-180, 359, BoundaryMode.FIXED);
+        aprHistoryPlot.setRangeBoundaries(-20, 20, BoundaryMode.FIXED);
         aprHistoryPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
         aprHistoryPlot.addSeries(azimuthHistorySeries,
                 new LineAndPointFormatter(
@@ -88,7 +139,7 @@ public class ActivityPlot extends Activity
         aprHistoryPlot.setDomainValueFormat(new DecimalFormat("#"));
 
         // setup checkboxes:
-        hwAcceleratedCb = (CheckBox) findViewById(R.id.hwAccelerationCb);
+        CheckBox hwAcceleratedCb = (CheckBox) findViewById(R.id.hwAccelerationCb);
         final PlotStatistics levelStats = new PlotStatistics(1000, false);
         final PlotStatistics histStats = new PlotStatistics(1000, false);
 
@@ -96,7 +147,7 @@ public class ActivityPlot extends Activity
         hwAcceleratedCb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                if(b) {
+                if (b) {
                     aprHistoryPlot.setLayerType(View.LAYER_TYPE_NONE, null);
                 } else {
                     aprHistoryPlot.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
@@ -104,7 +155,7 @@ public class ActivityPlot extends Activity
             }
         });
 
-        showFpsCb = (CheckBox) findViewById(R.id.showFpsCb);
+        CheckBox showFpsCb = (CheckBox) findViewById(R.id.showFpsCb);
         showFpsCb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
@@ -117,43 +168,11 @@ public class ActivityPlot extends Activity
         redrawer = new Redrawer(
                 Arrays.asList(new Plot[]{aprHistoryPlot}),
                 100, false);
-    }
 
-    @Override
-    public void onResume() {
-        final DataKitApi dataKitApi=new DataKitApi(ActivityPlot.this);
-        dataKitApi.connect(new OnConnectionListener() {
-            @Override
-            public void onConnected() {
-//                dataKitApi.subscribe(dataSourceClient);
-
-            }
-        });
-
-        super.onResume();
-        redrawer.start();
-    }
-
-    @Override
-    public void onPause() {
-        redrawer.pause();
-        super.onPause();
-    }
-
-    @Override
-    public void onDestroy() {
-        redrawer.finish();
-        super.onDestroy();
-    }
-
-    private void cleanup() {
-        // aunregister with the orientation sensor before exiting:
-        sensorMgr.unregisterListener(this);
-        finish();
     }
 
 
-    // Called whenever a new orSensor reading is taken.
+/*    // Called whenever a new orSensor reading is taken.
     @Override
     public synchronized void onSensorChanged(SensorEvent sensorEvent) {
         // get rid the oldest sample in history:
@@ -174,4 +193,5 @@ public class ActivityPlot extends Activity
     public void onAccuracyChanged(Sensor sensor, int i) {
         // Not interested in this event
     }
+    */
 }
