@@ -46,19 +46,4 @@
 
     </LinearLayout>
 
-    <LinearLayout android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content">
-        <CheckBox android:id="@+id/hwAccelerationCb"
-            android:visibility="gone"
-            android:text="HW Acceleration"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-
-        <CheckBox android:id="@+id/showFpsCb"
-            android:text="Show FPS"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-    </LinearLayout>
 </LinearLayout>

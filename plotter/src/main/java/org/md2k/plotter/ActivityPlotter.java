@@ -1,18 +1,18 @@
 package org.md2k.plotter;
 
 import android.content.Intent;
-import android.preference.CheckBoxPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.Button;
 
 import org.md2k.datakitapi.DataKitApi;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
 import org.md2k.datakitapi.source.datasource.DataSourceBuilder;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
+import org.md2k.datakitapi.source.platform.Platform;
+import org.md2k.datakitapi.source.platform.PlatformBuilder;
+import org.md2k.datakitapi.source.platform.PlatformType;
 import org.md2k.utilities.Report.Log;
 
 import java.util.ArrayList;
@@ -27,21 +27,24 @@ public class ActivityPlotter extends PreferenceActivity {
         addPreferencesFromResource(R.xml.pref_datasource);
     }
 
-    void getDataSources() {
+    void getDataSources(final String platformType) {
         final DataKitApi dataKitApi = new DataKitApi(ActivityPlotter.this);
         dataSourceClients=null;
+        final Platform platform=new PlatformBuilder().setType(platformType).build();
         dataKitApi.connect(new OnConnectionListener() {
             @Override
             public void onConnected() {
-                dataSourceClients = dataKitApi.find(new DataSourceBuilder().build()).await();
-                updateDataSource(dataSourceClients);
+                dataSourceClients = dataKitApi.find(new DataSourceBuilder().setPlatform(platform).build()).await();
+                updateDataSource(platformType,dataSourceClients);
                 dataKitApi.disconnect();
             }
         });
     }
     @Override
     protected void onResume(){
-        getDataSources();
+        getDataSources(PlatformType.AUTOSENSE_CHEST);
+        getDataSources(PlatformType.MICROSOFT_BAND);
+        getDataSources(PlatformType.PHONE);
         super.onResume();
     }
 
@@ -50,14 +53,13 @@ public class ActivityPlotter extends PreferenceActivity {
         super.onDestroy();
     }
 
-    void updateDataSource(ArrayList<DataSourceClient> dataSourceClients) {
-        PreferenceCategory preferenceCategory = (PreferenceCategory) findPreference("dataSource");
+    void updateDataSource(String platformType, ArrayList<DataSourceClient> dataSourceClients) {
+        PreferenceCategory preferenceCategory = (PreferenceCategory) findPreference(platformType);
         Log.d(TAG, "Preference category: " + preferenceCategory);
         preferenceCategory.removeAll();
         for (int i = 0; i < dataSourceClients.size(); i++) {
             final DataSourceClient dataSourceClient=dataSourceClients.get(i);
             String dataSourceType = dataSourceClients.get(i).getDataSource().getType();
-            String platformType = dataSourceClients.get(i).getDataSource().getPlatform().getType();
             String platformId = dataSourceClients.get(i).getDataSource().getPlatform().getId();
             Preference preference = new Preference(this);
             preference.setKey(dataSourceType);
@@ -72,7 +74,8 @@ public class ActivityPlotter extends PreferenceActivity {
                     return false;
                 }
             });
-            preference.setSummary(platformType + ":" + platformId);
+            if(platformType.equals(PlatformType.MICROSOFT_BAND))
+                preference.setSummary(dataSourceClient.getDataSource().getPlatform().getMetadata().get("location"));
             preferenceCategory.addPreference(preference);
         }
     }
