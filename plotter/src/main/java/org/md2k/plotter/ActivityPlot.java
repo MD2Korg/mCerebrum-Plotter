@@ -16,11 +16,15 @@ import com.androidplot.xy.XYStepMode;
 
 import org.md2k.datakitapi.DataKitApi;
 import org.md2k.datakitapi.datatype.DataType;
+import org.md2k.datakitapi.datatype.DataTypeFloat;
 import org.md2k.datakitapi.datatype.DataTypeFloatArray;
+import org.md2k.datakitapi.datatype.DataTypeInt;
+import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
 import org.md2k.datakitapi.messagehandler.OnReceiveListener;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
+import org.md2k.utilities.Report.Log;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -43,12 +47,43 @@ public class ActivityPlot extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_plot);
         dataSourceClient = (DataSourceClient) getIntent().getSerializableExtra(DataSourceClient.class.getSimpleName());
         preparePlot();
+        dataKitApi = new DataKitApi(ActivityPlot.this);
+        dataKitApi.connect(new OnConnectionListener() {
+            @Override
+            public void onConnected() {
+                boolean returned = dataKitApi.subscribe(dataSourceClient, new OnReceiveListener() {
+                    @Override
+                    public void onReceived(DataType dataType) {
+                        float v[] = null;
+                        if (dataType instanceof DataTypeInt) {
+                            int value = ((DataTypeInt) dataType).getSample();
+                            v = new float[1];
+                            v[0] = value;
+                        } else if (dataType instanceof DataTypeFloat) {
+                            float value = ((DataTypeFloat) dataType).getSample();
+                            v = new float[1];
+                            v[0] = value;
+                        } else if (dataType instanceof DataTypeFloatArray) {
+                            v = ((DataTypeFloatArray) dataType).getSample();
+                        } else if (dataType instanceof DataTypeIntArray) {
+                            int value[] = ((DataTypeIntArray) dataType).getSample();
+                            v = new float[value.length];
+                            for (int i = 0; i < value.length; i++)
+                                v[i] = value[i];
+                        }
+                        plotFloatArray(v);
+                    }
+                });
+            }
+        });
+        redrawer.start();
+
     }
 
     void plotFloatArray(float[] samples) {
@@ -60,41 +95,25 @@ public class ActivityPlot extends Activity {
         for (int i = 0; i < historySeries.size(); i++)
             historySeries.get(i).addLast(null, samples[i]);
     }
-    @Override
-    public void onResume() {
-        dataKitApi = new DataKitApi(ActivityPlot.this);
-        dataKitApi.connect(new OnConnectionListener() {
-            @Override
-            public void onConnected() {
-                boolean returned = dataKitApi.subscribe(dataSourceClient, new OnReceiveListener() {
-                    @Override
-                    public void onReceived(DataType dataType) {
-                        plotFloatArray(((DataTypeFloatArray) dataType).getSample());
-                    }
-                });
-            }
-        });
-        super.onResume();
-        redrawer.start();
-    }
 
-    @Override
-    public void onPause() {
-        dataKitApi.unsubscribe(dataSourceClient).await();
-        dataKitApi.disconnect();
-        redrawer.pause();
-        super.onPause();
-    }
 
     @Override
     public void onDestroy() {
+        Log.d(TAG, "onDestroy()");
+        if (dataKitApi != null) {
+            dataKitApi.unsubscribe(dataSourceClient).await();
+            dataKitApi.disconnect();
+            dataKitApi = null;
+        }
+        redrawer.pause();
+
         redrawer.finish();
         super.onDestroy();
     }
 
     void preparePlotSensors(String[] name, int[] ranges) {
-        int[] colors = {Color.rgb(100, 100, 200), Color.rgb(100, 200, 100), Color.rgb(200, 100, 100), Color.rgb(100, 200, 200), Color.rgb(200, 100, 200), Color.rgb(200, 200, 100)};
-        aprHistoryPlot.setRangeBoundaries(-1,1, BoundaryMode.AUTO);
+        int[] colors = {Color.rgb(0, 255, 0), Color.rgb(255, 0, 0), Color.rgb(0, 0, 255), Color.rgb(0, 255, 255), Color.rgb(255, 0, 255), Color.rgb(255, 255, 0)};
+        aprHistoryPlot.setRangeBoundaries(ranges[0], ranges[1], BoundaryMode.FIXED);
         for (int i = 0; i < name.length; i++) {
             SimpleXYSeries xySeries = new SimpleXYSeries(name[i]);
             xySeries.useImplicitXVals();
@@ -112,14 +131,30 @@ public class ActivityPlot extends Activity {
         historySeries = new ArrayList<>();
         switch (dataSourceClient.getDataSource().getType()) {
             case DataSourceType.ACCELEROMETER:
-                preparePlotSensors(new String[]{"X", "Y", "Z"}, new int[]{-10, 10});
+                preparePlotSensors(new String[]{"X", "Y", "Z"}, new int[]{-20, 20});
                 break;
             case DataSourceType.GYROSCOPE:
-                preparePlotSensors(new String[]{"X", "Y", "Z"}, new int[]{-10, 10});
+                preparePlotSensors(new String[]{"X", "Y", "Z"}, new int[]{-400, 400});
                 break;
             case DataSourceType.CPU:
                 preparePlotSensors(new String[]{"CPU Usage"}, new int[]{0, 5});
                 break;
+            case DataSourceType.RESPIRATION:
+                preparePlotSensors(new String[]{"Respiration"}, new int[]{-2000, 5000});
+                break;
+            case DataSourceType.ECG:
+                preparePlotSensors(new String[]{"ECG"}, new int[]{0, 5000});
+                break;
+            case DataSourceType.ACCELEROMETER_X:
+                preparePlotSensors(new String[]{"Accelerometer X"}, new int[]{1000, 3000});
+                break;
+            case DataSourceType.ACCELEROMETER_Y:
+                preparePlotSensors(new String[]{"Accelerometer Y"}, new int[]{1000, 3000});
+                break;
+            case DataSourceType.ACCELEROMETER_Z:
+                preparePlotSensors(new String[]{"Accelerometer Z"}, new int[]{1000, 3000});
+                break;
+
         }
 
         aprHistoryPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
