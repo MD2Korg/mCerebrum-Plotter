@@ -22,6 +22,8 @@ import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
 import org.md2k.datakitapi.messagehandler.OnReceiveListener;
+import org.md2k.datakitapi.source.METADATA;
+import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.utilities.Report.Log;
@@ -29,6 +31,7 @@ import org.md2k.utilities.Report.Log;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class ActivityPlot extends Activity {
 
@@ -123,39 +126,45 @@ public class ActivityPlot extends Activity {
         }
 
     }
+    String[] getName(ArrayList<HashMap<String,String>> dataDescriptors){
+        String name[]=new String[dataDescriptors.size()];
+        for(int i=0;i<dataDescriptors.size();i++){
+            if(dataDescriptors.get(i).get(METADATA.NAME)==null)
+                name[i]="";
+            else name[i]=dataDescriptors.get(i).get(METADATA.NAME);
+        }
+        return name;
+    }
+    int getMinValue(ArrayList<HashMap<String,String>> dataDescriptors) {
+        int minValue = Integer.MAX_VALUE;
+        for (int i = 0; i < dataDescriptors.size(); i++) {
+            if(dataDescriptors.get(i).get(METADATA.MIN_VALUE)==null) continue;
+            if(Integer.valueOf(dataDescriptors.get(i).get(METADATA.MIN_VALUE))<minValue)
+                minValue=Integer.parseInt(dataDescriptors.get(i).get(METADATA.MIN_VALUE));
+        }
+        return minValue;
+    }
+    int getMaxValue(ArrayList<HashMap<String,String>> dataDescriptors) {
+        int maxValue = Integer.MIN_VALUE;
+        for (int i = 0; i < dataDescriptors.size(); i++) {
+            if(dataDescriptors.get(i).get(METADATA.MAX_VALUE)==null) continue;
+            if(Integer.valueOf(dataDescriptors.get(i).get(METADATA.MAX_VALUE))>maxValue)
+                maxValue=Integer.parseInt(dataDescriptors.get(i).get(METADATA.MAX_VALUE));
+        }
+        return maxValue;
+    }
 
     void preparePlot() {
         // setup the APR History plot:
         aprHistoryPlot = (XYPlot) findViewById(R.id.aprHistoryPlot);
         aprHistoryPlot.setTitle(dataSourceClient.getDataSource().getType());
         historySeries = new ArrayList<>();
-        switch (dataSourceClient.getDataSource().getType()) {
-            case DataSourceType.ACCELEROMETER:
-                preparePlotSensors(new String[]{"X", "Y", "Z"}, new int[]{-20, 20});
-                break;
-            case DataSourceType.GYROSCOPE:
-                preparePlotSensors(new String[]{"X", "Y", "Z"}, new int[]{-400, 400});
-                break;
-            case DataSourceType.CPU:
-                preparePlotSensors(new String[]{"CPU Usage"}, new int[]{0, 5});
-                break;
-            case DataSourceType.RESPIRATION:
-                preparePlotSensors(new String[]{"Respiration"}, new int[]{-2000, 5000});
-                break;
-            case DataSourceType.ECG:
-                preparePlotSensors(new String[]{"ECG"}, new int[]{0, 5000});
-                break;
-            case DataSourceType.ACCELEROMETER_X:
-                preparePlotSensors(new String[]{"Accelerometer X"}, new int[]{1000, 3000});
-                break;
-            case DataSourceType.ACCELEROMETER_Y:
-                preparePlotSensors(new String[]{"Accelerometer Y"}, new int[]{1000, 3000});
-                break;
-            case DataSourceType.ACCELEROMETER_Z:
-                preparePlotSensors(new String[]{"Accelerometer Z"}, new int[]{1000, 3000});
-                break;
-
-        }
+        String names[]=getName(dataSourceClient.getDataSource().getDataDescriptors());
+        int minValue=getMinValue(dataSourceClient.getDataSource().getDataDescriptors());
+        int maxValue=getMaxValue(dataSourceClient.getDataSource().getDataDescriptors());
+        if(minValue==Integer.MAX_VALUE || maxValue==Integer.MIN_VALUE || minValue==maxValue)
+            preparePlotSensors(new String[]{""},new int[]{0,1});
+        preparePlotSensors(names, new int[]{minValue, maxValue});
 
         aprHistoryPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
         aprHistoryPlot.setDomainStepMode(XYStepMode.INCREMENT_BY_VAL);

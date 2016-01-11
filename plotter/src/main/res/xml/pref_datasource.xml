@@ -1,11 +1,5 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory
-        android:key="PHONE"
-        android:title="Phone Sensor"/>
-    <PreferenceCategory
-        android:key="AUTOSENSE_CHEST"
-        android:title="AutoSense Chest Sensor"/>
-    <PreferenceCategory
-        android:key="MICROSOFT_BAND"
-        android:title="MicrosoftBand Sensor"/>
+        android:key="datasource"
+        android:title="Data Sources"/>
 </PreferenceScreen>
