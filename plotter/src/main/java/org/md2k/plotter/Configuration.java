@@ -1,5 +1,7 @@
 package org.md2k.plotter;
 
+import android.os.Environment;
+
 import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.utilities.Files;
 import org.md2k.utilities.Report.Log;
@@ -33,19 +35,11 @@ import java.util.ArrayList;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-public class DefaultConfiguration {
-    public static boolean isExist(){
-        return Files.isExist(Constants.CONFIG_DIRECTORY+Constants.DEFAULT_CONFIG_PLOTTER_FILENAME);
-    }
+public class Configuration {
+    public static final String CONFIG_DIRECTORY = Environment.getExternalStorageDirectory().getAbsolutePath() + "/mCerebrum/org.md2k.plotter/";
+    public static final String DEFAULT_CONFIG_FILENAME = "default_config.json";
 
-    public static ArrayList<DataSource> read() {
-        String outDir = Constants.CONFIG_DIRECTORY;
-        String filename = outDir + Constants.DEFAULT_CONFIG_PLOTTER_FILENAME;
-        if (!isExist()) return null;
-        try {
-            return Files.readDataSourceFromFile(filename);
-        } catch (FileNotFoundException e) {
-            return null;
-        }
+    public static ArrayList<DataSource> readDefault() throws FileNotFoundException {
+        return Files.readJSONArray(CONFIG_DIRECTORY, DEFAULT_CONFIG_FILENAME,DataSource.class);
     }
 }

@@ -59,10 +59,6 @@ public class ActivityMain extends AppCompatActivity {
             case android.R.id.home:
                 finish();
                 break;
-            case R.id.action_settings:
-//                intent = new Intent(this, ActivityAutoSenseSettings.class);
-//                startActivity(intent);
-                break;
             case R.id.action_about:
                 intent = new Intent(this, ActivityAbout.class);
                 try {

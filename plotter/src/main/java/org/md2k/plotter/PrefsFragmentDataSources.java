@@ -13,17 +13,17 @@ import android.widget.ListView;
 
 import org.md2k.datakitapi.DataKitApi;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
+import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceBuilder;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
-import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.datakitapi.source.platform.PlatformBuilder;
-import org.md2k.datakitapi.source.platform.PlatformType;
 import org.md2k.utilities.Report.Log;
+import org.md2k.utilities.datakit.DataKitHandler;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.HashSet;
 
 /**
  * Copyright (c) 2015, The University of Memphis, MD2K Center
@@ -53,10 +53,17 @@ import java.util.HashSet;
  */
 public class PrefsFragmentDataSources extends PreferenceFragment {
     private static final String TAG = PrefsFragmentDataSources.class.getSimpleName();
+    DataKitHandler dataKitHandler;
+    ArrayList<DataSource> defaultDataSources;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        dataKitHandler = DataKitHandler.getInstance(getActivity());
+        try {
+            defaultDataSources = Configuration.readDefault();
+        } catch (FileNotFoundException ignored) {
+        }
         addPreferencesFromResource(R.xml.pref_datasource);
         setBackButton();
     }
@@ -71,97 +78,79 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
         return v;
     }
 
-    void getDataSources(final String type, final String id, final String platformType, final String platformId) {
-        Log.d(TAG,"getDataSources()...");
-        final DataKitApi dataKitApi = new DataKitApi(getActivity());
+    void findDataSource(final String type, final String id, final String platformType, final String platformId) {
         final Platform platform = new PlatformBuilder().setType(platformType).setId(platformId).build();
-        dataKitApi.connect(new OnConnectionListener() {
-            @Override
-            public void onConnected() {
-                Log.d(TAG,"connected...");
-                ArrayList<DataSourceClient> dataSourceClients = dataKitApi.find(new DataSourceBuilder().setPlatform(platform).setType(type).setId(id)).await();
-                Log.d(TAG,"Datasourceclient="+dataSourceClients.size());
-                updateDataSource(dataSourceClients);
-                dataKitApi.disconnect();
-            }
-        });
+        ArrayList<DataSourceClient> dataSourceClients = dataKitHandler.find(new DataSourceBuilder().setPlatform(platform).setType(type).setId(id));
+        updateDataSource(dataSourceClients);
     }
 
-    public void readDataSources() {
-        if (DefaultConfiguration.isExist()) {
+    public void findDataSources() {
+        if (defaultDataSources != null) {
+            for (int i = 0; i < defaultDataSources.size(); i++)
+                findDataSource(defaultDataSources.get(i).getType(), defaultDataSources.get(i).getId(), defaultDataSources.get(i).getPlatform().getType(), defaultDataSources.get(i).getPlatform().getId());
+        } else
+            findDataSource(null, null, null, null);
 
-            readDefaultSettings();
-        }
-        else readAllDataSources();
     }
 
-    public void readAllDataSources() {
-        getDataSources(null, null, null, null);
-    }
-
-    void readDefaultSettings() {
-        ArrayList<DataSource> defaultArrayList = DefaultConfiguration.read();
-        assert defaultArrayList != null;
-        for (int i = 0; i < defaultArrayList.size(); i++) {
-            getDataSources(defaultArrayList.get(i).getType(), defaultArrayList.get(i).getId(), defaultArrayList.get(i).getPlatform().getType(), defaultArrayList.get(i).getPlatform().getId());
-        }
-    }
 
     @Override
     public void onResume() {
         PreferenceCategory preferenceCategory = (PreferenceCategory) findPreference("datasource");
         preferenceCategory.removeAll();
-        readDataSources();
+        if (dataKitHandler.isConnected())
+            findDataSources();
+        else {
+            dataKitHandler.connect(new OnConnectionListener() {
+                @Override
+                public void onConnected() {
+                    findDataSources();
+                }
+            });
+        }
         super.onResume();
     }
 
     @Override
     public void onDestroy() {
+        dataKitHandler.disconnect();
         super.onDestroy();
     }
 
-    private String prepareName(String type, String id, String platformType, String platformId) {
-        String str="";
-        boolean flag=false;
-        if(platformType!=null){
-            str+=platformType;
-            flag=true;
+    private String getName(DataSource dataSource) {
+        String name;
+        if (dataSource.getMetadata().containsKey(METADATA.NAME))
+            name = dataSource.getMetadata().get(METADATA.NAME);
+        else {
+            name = dataSource.getType();
+            if (dataSource.getId() != null && dataSource.getId().length() != 0)
+                name += "(" + dataSource.getId() + ")";
         }
-        if(platformId!=null){
-            if(flag) str+=":";
-            str+=platformId;
-            flag=true;
+        return name;
+    }
+    private String getPlatformName(Platform platform) {
+        String name;
+        if (platform.getMetadata().containsKey(METADATA.NAME))
+            name = platform.getMetadata().get(METADATA.NAME);
+        else {
+            name = platform.getType();
+            if (platform.getId() != null && platform.getId().length() != 0)
+                name += "(" + platform.getId() + ")";
         }
-        if(type!=null){
-            if(flag) str+=":";
-            str+=type;
-            flag=true;
-        }
-        if(id!=null){
-            if(flag) str+=":";
-            str+=id;
-        }
-        return str;
-
+        return name;
     }
 
     void updateDataSource(ArrayList<DataSourceClient> dataSourceClients) {
         PreferenceCategory preferenceCategory = (PreferenceCategory) findPreference("datasource");
-        Log.d(TAG,"dataSourceClient="+dataSourceClients.size());
         for (int i = 0; i < dataSourceClients.size(); i++) {
             final DataSourceClient dataSourceClient = dataSourceClients.get(i);
-            String type = dataSourceClients.get(i).getDataSource().getType();
-            String id = dataSourceClients.get(i).getDataSource().getId();
-            String platformType = dataSourceClients.get(i).getDataSource().getPlatform().getType();
-            String platformId = dataSourceClients.get(i).getDataSource().getPlatform().getId();
+            if(dataSourceClient.getDataSource().getDataDescriptors()==null || dataSourceClient.getDataSource().getDataDescriptors().size()==0) continue;
+            if(!dataSourceClient.getDataSource().getDataDescriptors().get(0).containsKey(METADATA.MIN_VALUE))
+                continue;
 
             Preference preference = new Preference(getActivity());
-//            preference.setKey(dataSourceType);
-            String title = prepareName(type, id, platformType, platformId);
-            Log.d(TAG,"title="+title);
-//            title = title.replace("_", " ");
-//            title = title.substring(0, 1).toUpperCase() + title.substring(1).toLowerCase();
-            preference.setTitle(title);
+            preference.setTitle(getName(dataSourceClient.getDataSource()));
+            preference.setSummary(getPlatformName(dataSourceClient.getDataSource().getPlatform()));
             preference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                 @Override
                 public boolean onPreferenceClick(Preference preference) {

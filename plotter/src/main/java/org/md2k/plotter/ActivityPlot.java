@@ -27,6 +27,7 @@ import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
 import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.utilities.Report.Log;
+import org.md2k.utilities.datakit.DataKitHandler;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ public class ActivityPlot extends Activity {
     ArrayList<SimpleXYSeries> historySeries;
     private Redrawer redrawer;
     DataSourceClient dataSourceClient;
-    DataKitApi dataKitApi;
+    DataKitHandler dataKitHandler;
 
     /**
      * Called when the activity is first created.
@@ -56,35 +57,32 @@ public class ActivityPlot extends Activity {
         setContentView(R.layout.activity_plot);
         dataSourceClient = (DataSourceClient) getIntent().getSerializableExtra(DataSourceClient.class.getSimpleName());
         preparePlot();
-        dataKitApi = new DataKitApi(ActivityPlot.this);
-        dataKitApi.connect(new OnConnectionListener() {
+        dataKitHandler = DataKitHandler.getInstance(ActivityPlot.this);
+
+        dataKitHandler.subscribe(dataSourceClient, new OnReceiveListener() {
             @Override
-            public void onConnected() {
-                boolean returned = dataKitApi.subscribe(dataSourceClient, new OnReceiveListener() {
-                    @Override
-                    public void onReceived(DataType dataType) {
-                        float v[] = null;
-                        if (dataType instanceof DataTypeInt) {
-                            int value = ((DataTypeInt) dataType).getSample();
-                            v = new float[1];
-                            v[0] = value;
-                        } else if (dataType instanceof DataTypeFloat) {
-                            float value = ((DataTypeFloat) dataType).getSample();
-                            v = new float[1];
-                            v[0] = value;
-                        } else if (dataType instanceof DataTypeFloatArray) {
-                            v = ((DataTypeFloatArray) dataType).getSample();
-                        } else if (dataType instanceof DataTypeIntArray) {
-                            int value[] = ((DataTypeIntArray) dataType).getSample();
-                            v = new float[value.length];
-                            for (int i = 0; i < value.length; i++)
-                                v[i] = value[i];
-                        }
-                        plotFloatArray(v);
-                    }
-                });
+            public void onReceived(DataType dataType) {
+                float v[] = null;
+                if (dataType instanceof DataTypeInt) {
+                    int value = ((DataTypeInt) dataType).getSample();
+                    v = new float[1];
+                    v[0] = value;
+                } else if (dataType instanceof DataTypeFloat) {
+                    float value = ((DataTypeFloat) dataType).getSample();
+                    v = new float[1];
+                    v[0] = value;
+                } else if (dataType instanceof DataTypeFloatArray) {
+                    v = ((DataTypeFloatArray) dataType).getSample();
+                } else if (dataType instanceof DataTypeIntArray) {
+                    int value[] = ((DataTypeIntArray) dataType).getSample();
+                    v = new float[value.length];
+                    for (int i = 0; i < value.length; i++)
+                        v[i] = value[i];
+                }
+                plotFloatArray(v);
             }
         });
+
         redrawer.start();
 
     }
@@ -103,11 +101,7 @@ public class ActivityPlot extends Activity {
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy()");
-        if (dataKitApi != null) {
-            dataKitApi.unsubscribe(dataSourceClient).await();
-            dataKitApi.disconnect();
-            dataKitApi = null;
-        }
+        dataKitHandler.unsubscribe(dataSourceClient);
         redrawer.pause();
 
         redrawer.finish();
@@ -126,30 +120,33 @@ public class ActivityPlot extends Activity {
         }
 
     }
-    String[] getName(ArrayList<HashMap<String,String>> dataDescriptors){
-        String name[]=new String[dataDescriptors.size()];
-        for(int i=0;i<dataDescriptors.size();i++){
-            if(dataDescriptors.get(i).get(METADATA.NAME)==null)
-                name[i]="";
-            else name[i]=dataDescriptors.get(i).get(METADATA.NAME);
+
+    String[] getName(ArrayList<HashMap<String, String>> dataDescriptors) {
+        String name[] = new String[dataDescriptors.size()];
+        for (int i = 0; i < dataDescriptors.size(); i++) {
+            if (dataDescriptors.get(i).get(METADATA.NAME) == null)
+                name[i] = "";
+            else name[i] = dataDescriptors.get(i).get(METADATA.NAME);
         }
         return name;
     }
-    int getMinValue(ArrayList<HashMap<String,String>> dataDescriptors) {
+
+    int getMinValue(ArrayList<HashMap<String, String>> dataDescriptors) {
         int minValue = Integer.MAX_VALUE;
         for (int i = 0; i < dataDescriptors.size(); i++) {
-            if(dataDescriptors.get(i).get(METADATA.MIN_VALUE)==null) continue;
-            if(Integer.valueOf(dataDescriptors.get(i).get(METADATA.MIN_VALUE))<minValue)
-                minValue=Integer.parseInt(dataDescriptors.get(i).get(METADATA.MIN_VALUE));
+            if (dataDescriptors.get(i).get(METADATA.MIN_VALUE) == null) continue;
+            if (Integer.valueOf(dataDescriptors.get(i).get(METADATA.MIN_VALUE)) < minValue)
+                minValue = Integer.parseInt(dataDescriptors.get(i).get(METADATA.MIN_VALUE));
         }
         return minValue;
     }
-    int getMaxValue(ArrayList<HashMap<String,String>> dataDescriptors) {
+
+    int getMaxValue(ArrayList<HashMap<String, String>> dataDescriptors) {
         int maxValue = Integer.MIN_VALUE;
         for (int i = 0; i < dataDescriptors.size(); i++) {
-            if(dataDescriptors.get(i).get(METADATA.MAX_VALUE)==null) continue;
-            if(Integer.valueOf(dataDescriptors.get(i).get(METADATA.MAX_VALUE))>maxValue)
-                maxValue=Integer.parseInt(dataDescriptors.get(i).get(METADATA.MAX_VALUE));
+            if (dataDescriptors.get(i).get(METADATA.MAX_VALUE) == null) continue;
+            if (Integer.valueOf(dataDescriptors.get(i).get(METADATA.MAX_VALUE)) > maxValue)
+                maxValue = Integer.parseInt(dataDescriptors.get(i).get(METADATA.MAX_VALUE));
         }
         return maxValue;
     }
@@ -159,11 +156,11 @@ public class ActivityPlot extends Activity {
         aprHistoryPlot = (XYPlot) findViewById(R.id.aprHistoryPlot);
         aprHistoryPlot.setTitle(dataSourceClient.getDataSource().getType());
         historySeries = new ArrayList<>();
-        String names[]=getName(dataSourceClient.getDataSource().getDataDescriptors());
-        int minValue=getMinValue(dataSourceClient.getDataSource().getDataDescriptors());
-        int maxValue=getMaxValue(dataSourceClient.getDataSource().getDataDescriptors());
-        if(minValue==Integer.MAX_VALUE || maxValue==Integer.MIN_VALUE || minValue==maxValue)
-            preparePlotSensors(new String[]{""},new int[]{0,1});
+        String names[] = getName(dataSourceClient.getDataSource().getDataDescriptors());
+        int minValue = getMinValue(dataSourceClient.getDataSource().getDataDescriptors());
+        int maxValue = getMaxValue(dataSourceClient.getDataSource().getDataDescriptors());
+        if (minValue == Integer.MAX_VALUE || maxValue == Integer.MIN_VALUE || minValue == maxValue)
+            preparePlotSensors(new String[]{""}, new int[]{0, 1});
         preparePlotSensors(names, new int[]{minValue, maxValue});
 
         aprHistoryPlot.setDomainBoundaries(0, HISTORY_SIZE, BoundaryMode.FIXED);
