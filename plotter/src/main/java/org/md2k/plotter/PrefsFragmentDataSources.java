@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.md2k.datakitapi.DataKitApi;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
@@ -146,9 +147,6 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
         PreferenceCategory preferenceCategory = (PreferenceCategory) findPreference("datasource");
         for (int i = 0; i < dataSourceClients.size(); i++) {
             final DataSourceClient dataSourceClient = dataSourceClients.get(i);
-            if(dataSourceClient.getDataSource().getDataDescriptors()==null || dataSourceClient.getDataSource().getDataDescriptors().size()==0) continue;
-            if(!dataSourceClient.getDataSource().getDataDescriptors().get(0).containsKey(METADATA.MIN_VALUE))
-                continue;
 
             Preference preference = new Preference(getActivity());
             preference.setTitle(getName(dataSourceClient.getDataSource()));
@@ -156,7 +154,11 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
             preference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                 @Override
                 public boolean onPreferenceClick(Preference preference) {
-                    runPlot(dataSourceClient);
+                    if(dataSourceClient.getDataSource().getDataDescriptors()==null || dataSourceClient.getDataSource().getDataDescriptors().size()==0 ||
+                    !dataSourceClient.getDataSource().getDataDescriptors().get(0).containsKey(METADATA.MIN_VALUE))
+                        Toast.makeText(getActivity(),"Error: MIN_VALUE & MAX_VALUE are not defined in DataDescriptor...Not possible to plot",Toast.LENGTH_LONG).show();
+                    else
+                        runPlot(dataSourceClient);
                     return false;
                 }
             });
