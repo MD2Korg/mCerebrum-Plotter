@@ -81,6 +81,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     void findDataSource(final String type, final String id, final String platformType, final String platformId) {
         final Platform platform = new PlatformBuilder().setType(platformType).setId(platformId).build();
         ArrayList<DataSourceClient> dataSourceClients = dataKitHandler.find(new DataSourceBuilder().setPlatform(platform).setType(type).setId(id));
+        Log.d(TAG,"dataSourceClients="+dataSourceClients.size()+" type="+type+" platformType="+platformType+" platformId="+platformId);
         updateDataSource(dataSourceClients);
     }
 
@@ -104,6 +105,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
             dataKitHandler.connect(new OnConnectionListener() {
                 @Override
                 public void onConnected() {
+                    Log.d(TAG,"connected...");
                     findDataSources();
                 }
             });
@@ -113,7 +115,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
 
     @Override
     public void onDestroy() {
-        dataKitHandler.disconnect();
+        dataKitHandler.close();
         super.onDestroy();
     }
 
@@ -177,5 +179,11 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
                 getActivity().finish();
             }
         });
+    }
+    @Override
+    public void onPause() {
+        Log.d(TAG,"onPause()...");
+        dataKitHandler.disconnect();
+        super.onPause();
     }
 }
