@@ -16,6 +16,8 @@ import com.androidplot.xy.XYStepMode;
 
 import org.md2k.datakitapi.DataKitApi;
 import org.md2k.datakitapi.datatype.DataType;
+import org.md2k.datakitapi.datatype.DataTypeDouble;
+import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
 import org.md2k.datakitapi.datatype.DataTypeFloat;
 import org.md2k.datakitapi.datatype.DataTypeFloatArray;
 import org.md2k.datakitapi.datatype.DataTypeInt;
@@ -78,8 +80,18 @@ public class ActivityPlot extends Activity {
                     v = new float[value.length];
                     for (int i = 0; i < value.length; i++)
                         v[i] = value[i];
+                }else if (dataType instanceof DataTypeDoubleArray) {
+                    double value[] = ((DataTypeDoubleArray) dataType).getSample();
+                    v = new float[value.length];
+                    for (int i = 0; i < value.length; i++)
+                        v[i] = (float) value[i];
+                }else if (dataType instanceof DataTypeDouble) {
+                    double value =  ((DataTypeDouble) dataType).getSample();
+                    v = new float[1];
+                    v[0] = (float) value;
                 }
-                plotFloatArray(v);
+                if(v!=null)
+                    plotFloatArray(v);
             }
         });
 
