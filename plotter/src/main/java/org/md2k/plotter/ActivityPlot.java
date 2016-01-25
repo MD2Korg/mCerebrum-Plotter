@@ -55,7 +55,7 @@ public class ActivityPlot extends Activity {
         setContentView(R.layout.activity_plot);
         dataSourceClient = (DataSourceClient) getIntent().getSerializableExtra(DataSourceClient.class.getSimpleName());
         preparePlot();
-        dataKitAPI = DataKitAPI.getInstance(ActivityPlot.this);
+        dataKitAPI = DataKitAPI.getInstance(getApplicationContext());
 
         dataKitAPI.subscribe(dataSourceClient, new OnReceiveListener() {
             @Override

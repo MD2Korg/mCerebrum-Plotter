@@ -61,7 +61,8 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        dataKitAPI = DataKitAPI.getInstance(getActivity());
+        DataKitAPI.getInstance(getActivity().getApplicationContext()).close();
+        dataKitAPI = DataKitAPI.getInstance(getActivity().getApplicationContext());
         try {
             defaultDataSources = Configuration.readDefault();
         } catch (FileNotFoundException ignored) {
@@ -98,7 +99,8 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
 
 
     @Override
-    public void onResume() {
+    public void onStart() {
+        Log.d(TAG,"onResume()...");
         PreferenceCategory preferenceCategory = (PreferenceCategory) findPreference("datasource");
         preferenceCategory.removeAll();
         if (dataKitAPI.isConnected())
@@ -113,13 +115,14 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
             }, new OnExceptionListener() {
                 @Override
                 public void onException(Status status) {
-                    android.util.Log.d(TAG, "onException...");
+                    Log.d(TAG, "onException...");
                     Toast.makeText(getActivity(), "Plotter Stopped. DataKit Error: " + status.getStatusMessage(), Toast.LENGTH_LONG).show();
-//                    stopSelf();
+                    dataKitAPI.disconnect();
+                    dataKitAPI.close();
                 }
             });
         }
-        super.onResume();
+        super.onStart();
     }
 
     @Override
@@ -191,9 +194,9 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
         });
     }
     @Override
-    public void onPause() {
-        Log.d(TAG,"onPause()...");
+    public void onStop() {
+        Log.d(TAG,"onStop()...");
         dataKitAPI.disconnect();
-        super.onPause();
+        super.onStop();
     }
 }
