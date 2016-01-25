@@ -14,7 +14,7 @@ import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
 import com.androidplot.xy.XYStepMode;
 
-import org.md2k.datakitapi.DataKitApi;
+import org.md2k.datakitapi.DataKitAPI;
 import org.md2k.datakitapi.datatype.DataType;
 import org.md2k.datakitapi.datatype.DataTypeDouble;
 import org.md2k.datakitapi.datatype.DataTypeDoubleArray;
@@ -22,14 +22,10 @@ import org.md2k.datakitapi.datatype.DataTypeFloat;
 import org.md2k.datakitapi.datatype.DataTypeFloatArray;
 import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
-import org.md2k.datakitapi.messagehandler.OnConnectionListener;
 import org.md2k.datakitapi.messagehandler.OnReceiveListener;
 import org.md2k.datakitapi.source.METADATA;
-import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
-import org.md2k.datakitapi.source.datasource.DataSourceType;
 import org.md2k.utilities.Report.Log;
-import org.md2k.utilities.datakit.DataKitHandler;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -45,7 +41,7 @@ public class ActivityPlot extends Activity {
     ArrayList<SimpleXYSeries> historySeries;
     private Redrawer redrawer;
     DataSourceClient dataSourceClient;
-    DataKitHandler dataKitHandler;
+    DataKitAPI dataKitAPI;
 
     /**
      * Called when the activity is first created.
@@ -59,9 +55,9 @@ public class ActivityPlot extends Activity {
         setContentView(R.layout.activity_plot);
         dataSourceClient = (DataSourceClient) getIntent().getSerializableExtra(DataSourceClient.class.getSimpleName());
         preparePlot();
-        dataKitHandler = DataKitHandler.getInstance(ActivityPlot.this);
+        dataKitAPI = DataKitAPI.getInstance(ActivityPlot.this);
 
-        dataKitHandler.subscribe(dataSourceClient, new OnReceiveListener() {
+        dataKitAPI.subscribe(dataSourceClient, new OnReceiveListener() {
             @Override
             public void onReceived(DataType dataType) {
                 float v[] = null;
@@ -113,7 +109,7 @@ public class ActivityPlot extends Activity {
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy()");
-        dataKitHandler.unsubscribe(dataSourceClient);
+        dataKitAPI.unsubscribe(dataSourceClient);
         redrawer.pause();
 
         redrawer.finish();

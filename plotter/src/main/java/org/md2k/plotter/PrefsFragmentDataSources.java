@@ -12,16 +12,17 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import org.md2k.datakitapi.DataKitApi;
+import org.md2k.datakitapi.DataKitAPI;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
+import org.md2k.datakitapi.messagehandler.OnExceptionListener;
 import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceBuilder;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.datakitapi.source.platform.PlatformBuilder;
+import org.md2k.datakitapi.status.Status;
 import org.md2k.utilities.Report.Log;
-import org.md2k.utilities.datakit.DataKitHandler;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -54,13 +55,13 @@ import java.util.ArrayList;
  */
 public class PrefsFragmentDataSources extends PreferenceFragment {
     private static final String TAG = PrefsFragmentDataSources.class.getSimpleName();
-    DataKitHandler dataKitHandler;
+    DataKitAPI dataKitAPI;
     ArrayList<DataSource> defaultDataSources;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        dataKitHandler = DataKitHandler.getInstance(getActivity());
+        dataKitAPI = DataKitAPI.getInstance(getActivity());
         try {
             defaultDataSources = Configuration.readDefault();
         } catch (FileNotFoundException ignored) {
@@ -81,7 +82,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
 
     void findDataSource(final String type, final String id, final String platformType, final String platformId) {
         final Platform platform = new PlatformBuilder().setType(platformType).setId(platformId).build();
-        ArrayList<DataSourceClient> dataSourceClients = dataKitHandler.find(new DataSourceBuilder().setPlatform(platform).setType(type).setId(id));
+        ArrayList<DataSourceClient> dataSourceClients = dataKitAPI.find(new DataSourceBuilder().setPlatform(platform).setType(type).setId(id));
         Log.d(TAG,"dataSourceClients="+dataSourceClients.size()+" type="+type+" platformType="+platformType+" platformId="+platformId);
         updateDataSource(dataSourceClients);
     }
@@ -100,14 +101,21 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     public void onResume() {
         PreferenceCategory preferenceCategory = (PreferenceCategory) findPreference("datasource");
         preferenceCategory.removeAll();
-        if (dataKitHandler.isConnected())
+        if (dataKitAPI.isConnected())
             findDataSources();
         else {
-            dataKitHandler.connect(new OnConnectionListener() {
+            dataKitAPI.connect(new OnConnectionListener() {
                 @Override
                 public void onConnected() {
                     Log.d(TAG,"connected...");
                     findDataSources();
+                }
+            }, new OnExceptionListener() {
+                @Override
+                public void onException(Status status) {
+                    android.util.Log.d(TAG, "onException...");
+                    Toast.makeText(getActivity(), "Plotter Stopped. DataKit Error: " + status.getStatusMessage(), Toast.LENGTH_LONG).show();
+//                    stopSelf();
                 }
             });
         }
@@ -116,7 +124,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
 
     @Override
     public void onDestroy() {
-        dataKitHandler.close();
+        dataKitAPI.close();
         super.onDestroy();
     }
 
@@ -185,7 +193,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     @Override
     public void onPause() {
         Log.d(TAG,"onPause()...");
-        dataKitHandler.disconnect();
+        dataKitAPI.disconnect();
         super.onPause();
     }
 }
