@@ -144,6 +144,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     }
     private String getPlatformName(Platform platform) {
         String name;
+        if(platform==null) return "Platform - Not Defined";
         if (platform.getMetadata().containsKey(METADATA.NAME))
             name = platform.getMetadata().get(METADATA.NAME);
         else {
