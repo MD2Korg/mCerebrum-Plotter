@@ -21,6 +21,7 @@ import org.md2k.datakitapi.source.datasource.DataSourceBuilder;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.datakitapi.source.platform.PlatformBuilder;
+import org.md2k.datakitapi.source.platform.PlatformType;
 import org.md2k.datakitapi.status.Status;
 import org.md2k.utilities.Report.Log;
 
@@ -101,8 +102,10 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     @Override
     public void onStart() {
         Log.d(TAG,"onResume()...");
-        PreferenceCategory preferenceCategory = (PreferenceCategory) findPreference("datasource");
-        preferenceCategory.removeAll();
+        ((PreferenceCategory) findPreference("autosense")).removeAll();
+        ((PreferenceCategory) findPreference("phone")).removeAll();
+        ((PreferenceCategory) findPreference("microsoft_band")).removeAll();
+        ((PreferenceCategory) findPreference("other")).removeAll();
         if (dataKitAPI.isConnected())
             findDataSources();
         else {
@@ -156,7 +159,6 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     }
 
     void updateDataSource(ArrayList<DataSourceClient> dataSourceClients) {
-        PreferenceCategory preferenceCategory = (PreferenceCategory) findPreference("datasource");
         for (int i = 0; i < dataSourceClients.size(); i++) {
             final DataSourceClient dataSourceClient = dataSourceClients.get(i);
 
@@ -174,6 +176,18 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
                     return false;
                 }
             });
+            PreferenceCategory preferenceCategory;
+            preferenceCategory = (PreferenceCategory) findPreference("other");
+            if(dataSourceClient.getDataSource().getPlatform()==null)
+                preferenceCategory = (PreferenceCategory) findPreference("other");
+            else if(dataSourceClient.getDataSource().getPlatform().getType()==null)
+                preferenceCategory = (PreferenceCategory) findPreference("other");
+            else if(PlatformType.AUTOSENSE_CHEST.equals(dataSourceClient.getDataSource().getPlatform().getType()))
+                preferenceCategory = (PreferenceCategory) findPreference("autosense");
+            else if(PlatformType.AUTOSENSE_WRIST.equals(dataSourceClient.getDataSource().getPlatform().getType()))
+                preferenceCategory = (PreferenceCategory) findPreference("autosense");
+            else if(PlatformType.PHONE.equals(dataSourceClient.getDataSource().getPlatform().getType()))
+                preferenceCategory = (PreferenceCategory) findPreference("phone");
             preferenceCategory.addPreference(preference);
         }
     }

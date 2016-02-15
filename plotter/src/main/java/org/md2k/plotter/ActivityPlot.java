@@ -53,7 +53,7 @@ public class ActivityPlot extends Activity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_plot);
-        dataSourceClient = (DataSourceClient) getIntent().getSerializableExtra(DataSourceClient.class.getSimpleName());
+        dataSourceClient = (DataSourceClient) getIntent().getParcelableExtra(DataSourceClient.class.getSimpleName());
         preparePlot();
         dataKitAPI = DataKitAPI.getInstance(getApplicationContext());
 
