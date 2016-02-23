@@ -3,7 +3,6 @@ package org.md2k.plotter;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.view.Window;
 import android.view.WindowManager;
 
 import com.androidplot.Plot;
@@ -31,17 +30,17 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 public class ActivityPlot extends Activity {
 
     private static final int HISTORY_SIZE = 300;            // number of points to plot in history
     private static final String TAG = ActivityPlot.class.getSimpleName();
-
-    private XYPlot aprHistoryPlot = null;
     ArrayList<SimpleXYSeries> historySeries;
-    private Redrawer redrawer;
     DataSourceClient dataSourceClient;
     DataKitAPI dataKitAPI;
+    private XYPlot aprHistoryPlot = null;
+    private Redrawer redrawer;
 
     /**
      * Called when the activity is first created.
@@ -56,6 +55,38 @@ public class ActivityPlot extends Activity {
         dataSourceClient = (DataSourceClient) getIntent().getParcelableExtra(DataSourceClient.class.getSimpleName());
         preparePlot();
         dataKitAPI = DataKitAPI.getInstance(getApplicationContext());
+
+        List<DataType> dtList = dataKitAPI.query(dataSourceClient, HISTORY_SIZE);
+        for (DataType dataType : dtList) {
+            float v[] = null;
+            if (dataType instanceof DataTypeInt) {
+                int value = ((DataTypeInt) dataType).getSample();
+                v = new float[1];
+                v[0] = value;
+            } else if (dataType instanceof DataTypeFloat) {
+                float value = ((DataTypeFloat) dataType).getSample();
+                v = new float[1];
+                v[0] = value;
+            } else if (dataType instanceof DataTypeFloatArray) {
+                v = ((DataTypeFloatArray) dataType).getSample();
+            } else if (dataType instanceof DataTypeIntArray) {
+                int value[] = ((DataTypeIntArray) dataType).getSample();
+                v = new float[value.length];
+                for (int i = 0; i < value.length; i++)
+                    v[i] = value[i];
+            } else if (dataType instanceof DataTypeDoubleArray) {
+                double value[] = ((DataTypeDoubleArray) dataType).getSample();
+                v = new float[value.length];
+                for (int i = 0; i < value.length; i++)
+                    v[i] = (float) value[i];
+            } else if (dataType instanceof DataTypeDouble) {
+                double value = ((DataTypeDouble) dataType).getSample();
+                v = new float[1];
+                v[0] = (float) value;
+            }
+            if (v != null)
+                plotFloatArray(v);
+        }
 
         dataKitAPI.subscribe(dataSourceClient, new OnReceiveListener() {
             @Override
