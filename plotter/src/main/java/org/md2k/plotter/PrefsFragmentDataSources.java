@@ -188,6 +188,8 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
                 preferenceCategory = (PreferenceCategory) findPreference("autosense");
             else if(PlatformType.PHONE.equals(dataSourceClient.getDataSource().getPlatform().getType()))
                 preferenceCategory = (PreferenceCategory) findPreference("phone");
+            else if(PlatformType.MICROSOFT_BAND.equals(dataSourceClient.getDataSource().getPlatform().getType()))
+                preferenceCategory = (PreferenceCategory) findPreference("microsoft_band");
             preferenceCategory.addPreference(preference);
         }
     }
@@ -200,7 +202,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
 
 
     private void setBackButton() {
-        final Button button = (Button) getActivity().findViewById(R.id.button_1);
+        Button button = (Button) getActivity().findViewById(R.id.button_1);
         button.setText("Close");
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
