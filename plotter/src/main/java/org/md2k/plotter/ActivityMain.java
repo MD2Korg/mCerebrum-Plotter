@@ -2,17 +2,17 @@ package org.md2k.plotter;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.preference.Preference;
-import android.preference.PreferenceCategory;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import com.crashlytics.android.Crashlytics;
+
 import org.md2k.utilities.UI.ActivityAbout;
 import org.md2k.utilities.UI.ActivityCopyright;
 
-import java.util.ArrayList;
+import io.fabric.sdk.android.Fabric;
 
 public class ActivityMain extends AppCompatActivity {
     private static final String TAG = ActivityMain.class.getSimpleName();
@@ -20,6 +20,7 @@ public class ActivityMain extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Fabric.with(this, new Crashlytics());
         setContentView(R.layout.activity_main);
         getFragmentManager().beginTransaction().replace(R.id.layout_preference_fragment,
                 new PrefsFragmentDataSources()).commit();
