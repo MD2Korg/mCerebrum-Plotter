@@ -32,13 +32,41 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+/*
+ * Copyright (c) 2016, The University of Memphis, MD2K Center
+ * - Syed Monowar Hossain <monowar.hossain@gmail.com>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
 public class ActivityPlot extends Activity {
 
     private static final int HISTORY_SIZE = 300;            // number of points to plot in history
     private static final String TAG = ActivityPlot.class.getSimpleName();
-    ArrayList<SimpleXYSeries> historySeries;
-    DataSourceClient dataSourceClient;
-    DataKitAPI dataKitAPI;
+    private ArrayList<SimpleXYSeries> historySeries;
+    private DataSourceClient dataSourceClient;
+    private DataKitAPI dataKitAPI;
     private XYPlot aprHistoryPlot = null;
     private Redrawer redrawer;
 
@@ -126,7 +154,7 @@ public class ActivityPlot extends Activity {
 
     }
 
-    void plotFloatArray(float[] samples) {
+    private void plotFloatArray(float[] samples) {
         if (historySeries.get(0).size() > HISTORY_SIZE) {
             for (int i = 0; i < historySeries.size(); i++) {
                 historySeries.get(i).removeFirst();
@@ -140,14 +168,15 @@ public class ActivityPlot extends Activity {
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy()");
-        dataKitAPI.unsubscribe(dataSourceClient);
+        if (dataSourceClient != null)
+            dataKitAPI.unsubscribe(dataSourceClient);
         redrawer.pause();
 
         redrawer.finish();
         super.onDestroy();
     }
 
-    void preparePlotSensors(String[] name, int[] ranges) {
+    private void preparePlotSensors(String[] name, int[] ranges) {
         int[] colors = {Color.rgb(0, 255, 0), Color.rgb(255, 0, 0), Color.rgb(0, 0, 255), Color.rgb(0, 255, 255), Color.rgb(255, 0, 255), Color.rgb(255, 255, 0)};
         aprHistoryPlot.setRangeBoundaries(ranges[0], ranges[1], BoundaryMode.FIXED);
         for (int i = 0; i < name.length; i++) {
@@ -160,7 +189,7 @@ public class ActivityPlot extends Activity {
 
     }
 
-    String[] getName(ArrayList<HashMap<String, String>> dataDescriptors) {
+    private String[] getName(ArrayList<HashMap<String, String>> dataDescriptors) {
         String name[] = new String[dataDescriptors.size()];
         for (int i = 0; i < dataDescriptors.size(); i++) {
             if (dataDescriptors.get(i).get(METADATA.NAME) == null)
@@ -170,7 +199,7 @@ public class ActivityPlot extends Activity {
         return name;
     }
 
-    int getMinValue(ArrayList<HashMap<String, String>> dataDescriptors) {
+    private int getMinValue(ArrayList<HashMap<String, String>> dataDescriptors) {
         int minValue = Integer.MAX_VALUE;
         for (int i = 0; i < dataDescriptors.size(); i++) {
             if (dataDescriptors.get(i).get(METADATA.MIN_VALUE) == null) continue;
@@ -180,7 +209,7 @@ public class ActivityPlot extends Activity {
         return minValue;
     }
 
-    int getMaxValue(ArrayList<HashMap<String, String>> dataDescriptors) {
+    private int getMaxValue(ArrayList<HashMap<String, String>> dataDescriptors) {
         int maxValue = Integer.MIN_VALUE;
         for (int i = 0; i < dataDescriptors.size(); i++) {
             if (dataDescriptors.get(i).get(METADATA.MAX_VALUE) == null) continue;
@@ -190,7 +219,7 @@ public class ActivityPlot extends Activity {
         return maxValue;
     }
 
-    void preparePlot() {
+    private void preparePlot() {
         // setup the APR History plot:
         aprHistoryPlot = (XYPlot) findViewById(R.id.aprHistoryPlot);
         aprHistoryPlot.setTitle(dataSourceClient.getDataSource().getType());
