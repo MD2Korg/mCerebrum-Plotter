@@ -28,21 +28,21 @@ import org.md2k.utilities.Report.Log;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
-/**
- * Copyright (c) 2015, The University of Memphis, MD2K Center
+/*
+ * Copyright (c) 2016, The University of Memphis, MD2K Center
  * - Syed Monowar Hossain <monowar.hossain@gmail.com>
  * All rights reserved.
- * <p/>
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * <p/>
+ *
  * * Redistributions of source code must retain the above copyright notice, this
  * list of conditions and the following disclaimer.
- * <p/>
+ *
  * * Redistributions in binary form must reproduce the above copyright notice,
  * this list of conditions and the following disclaimer in the documentation
  * and/or other materials provided with the distribution.
- * <p/>
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -54,10 +54,11 @@ import java.util.ArrayList;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 public class PrefsFragmentDataSources extends PreferenceFragment {
     private static final String TAG = PrefsFragmentDataSources.class.getSimpleName();
-    DataKitAPI dataKitAPI;
-    ArrayList<DataSource> defaultDataSources;
+    private DataKitAPI dataKitAPI;
+    private ArrayList<DataSource> defaultDataSources;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -82,7 +83,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
         return v;
     }
 
-    void findDataSource(final String type, final String id, final String platformType, final String platformId) {
+    private void findDataSource(final String type, final String id, final String platformType, final String platformId) {
         final Platform platform = new PlatformBuilder().setType(platformType).setId(platformId).build();
         ArrayList<DataSourceClient> dataSourceClients = dataKitAPI.find(new DataSourceBuilder().setPlatform(platform).setType(type).setId(id));
         Log.d(TAG,"dataSourceClients="+dataSourceClients.size()+" type="+type+" platformType="+platformType+" platformId="+platformId);
@@ -106,26 +107,33 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
         ((PreferenceCategory) findPreference("phone")).removeAll();
         ((PreferenceCategory) findPreference("microsoft_band")).removeAll();
         ((PreferenceCategory) findPreference("other")).removeAll();
-        if (dataKitAPI.isConnected())
-            findDataSources();
-        else {
-            dataKitAPI.connect(new OnConnectionListener() {
-                @Override
-                public void onConnected() {
-                    Log.d(TAG,"connected...");
-                    findDataSources();
-                }
-            }, new OnExceptionListener() {
-                @Override
-                public void onException(Status status) {
-                    Log.d(TAG, "onException...");
-                    Toast.makeText(getActivity(), "Plotter Stopped. DataKit Error: " + status.getStatusMessage(), Toast.LENGTH_LONG).show();
-                    dataKitAPI.disconnect();
-                    dataKitAPI.close();
-                }
-            });
+
+        if (dataKitAPI == null) {
+            Log.d(TAG, "dataKit Null...");
+            Toast.makeText(getActivity(), "Plotter Stopped. DataKit Unavailable ", Toast.LENGTH_LONG).show();
+        } else {
+
+            if (dataKitAPI.isConnected())
+                findDataSources();
+            else {
+                dataKitAPI.connect(new OnConnectionListener() {
+                    @Override
+                    public void onConnected() {
+                        Log.d(TAG, "connected...");
+                        findDataSources();
+                    }
+                }, new OnExceptionListener() {
+                    @Override
+                    public void onException(Status status) {
+                        Log.d(TAG, "onException...");
+                        Toast.makeText(getActivity(), "Plotter Stopped. DataKit Error: " + status.getStatusMessage(), Toast.LENGTH_LONG).show();
+                        dataKitAPI.disconnect();
+                        dataKitAPI.close();
+                    }
+                });
+            }
+            super.onStart();
         }
-        super.onStart();
     }
 
     @Override
@@ -158,7 +166,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
         return name;
     }
 
-    void updateDataSource(ArrayList<DataSourceClient> dataSourceClients) {
+    private void updateDataSource(ArrayList<DataSourceClient> dataSourceClients) {
         for (int i = 0; i < dataSourceClients.size(); i++) {
             final DataSourceClient dataSourceClient = dataSourceClients.get(i);
 
@@ -194,7 +202,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
         }
     }
 
-    void runPlot(DataSourceClient dataSourceClient) {
+    private void runPlot(DataSourceClient dataSourceClient) {
         Intent intent = new Intent(getActivity(), ActivityPlot.class);
         intent.putExtra(DataSourceClient.class.getSimpleName(), dataSourceClient);
         startActivity(intent);
