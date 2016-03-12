@@ -24,8 +24,6 @@ android {
         targetSdkVersion 21
         versionCode 12
         versionName '0.4.2'
-        // Enabling multidex support.
-        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -49,7 +47,6 @@ dependencies {
     compile project(':datakitapi')
     compile project(':utilities')
     compile files('libs/androidplot-core-0.6.1.jar')
-    compile 'com.android.support:multidex:1.0.0'
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile('com.crashlytics.sdk.android:crashlytics:2.5.5@aar') {
         transitive = true;
