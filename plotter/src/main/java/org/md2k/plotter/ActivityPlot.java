@@ -161,7 +161,11 @@ public class ActivityPlot extends Activity {
             }
         }
         for (int i = 0; i < historySeries.size(); i++)
-            historySeries.get(i).addLast(null, samples[i]);
+            try {
+                historySeries.get(i).addLast(null, samples[i]);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                Log.d("Plotter", "Index out of bounds" + e.getStackTrace().toString());
+            }
     }
 
 

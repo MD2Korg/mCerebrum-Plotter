@@ -211,12 +211,14 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
 
     private void setBackButton() {
         Button button = (Button) getActivity().findViewById(R.id.button_1);
-        button.setText("Close");
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                getActivity().finish();
-            }
-        });
+        if (button != null) {
+            button.setText("Close");
+            button.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View v) {
+                    getActivity().finish();
+                }
+            });
+        }
     }
     @Override
     public void onStop() {
