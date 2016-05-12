@@ -3,7 +3,7 @@ package org.md2k.plotter;
 import android.os.Environment;
 
 import org.md2k.datakitapi.source.datasource.DataSource;
-import org.md2k.utilities.Files;
+import org.md2k.utilities.FileManager;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -40,6 +40,6 @@ public class Configuration {
     public static final String DEFAULT_CONFIG_FILENAME = "default_config.json";
 
     public static ArrayList<DataSource> readDefault() throws FileNotFoundException {
-        return Files.readJSONArray(CONFIG_DIRECTORY, DEFAULT_CONFIG_FILENAME,DataSource.class);
+        return FileManager.readJSONArray(CONFIG_DIRECTORY, DEFAULT_CONFIG_FILENAME,DataSource.class);
     }
 }

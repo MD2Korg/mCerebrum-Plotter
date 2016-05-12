@@ -21,9 +21,12 @@ import org.md2k.datakitapi.datatype.DataTypeFloat;
 import org.md2k.datakitapi.datatype.DataTypeFloatArray;
 import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
+import org.md2k.datakitapi.messagehandler.OnConnectionListener;
+import org.md2k.datakitapi.messagehandler.OnExceptionListener;
 import org.md2k.datakitapi.messagehandler.OnReceiveListener;
 import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
+import org.md2k.datakitapi.status.Status;
 import org.md2k.utilities.Report.Log;
 
 import java.text.DecimalFormat;
@@ -80,10 +83,26 @@ public class ActivityPlot extends Activity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_plot);
-        dataSourceClient = (DataSourceClient) getIntent().getParcelableExtra(DataSourceClient.class.getSimpleName());
+        dataSourceClient = getIntent().getParcelableExtra(DataSourceClient.class.getSimpleName());
         preparePlot();
         dataKitAPI = DataKitAPI.getInstance(getApplicationContext());
+        if(!dataKitAPI.isConnected()){
+            dataKitAPI.connect(new OnConnectionListener() {
+                @Override
+                public void onConnected() {
+                    start();
+                }
+            }, new OnExceptionListener() {
+                @Override
+                public void onException(Status status) {
+                    finish();
+                }
+            });
+        }else
+            start();
 
+    }
+    void start(){
         List<DataType> dtList = dataKitAPI.query(dataSourceClient, HISTORY_SIZE);
         for (DataType dataType : dtList) {
             float v[] = null;
@@ -151,6 +170,7 @@ public class ActivityPlot extends Activity {
         });
 
         redrawer.start();
+
 
     }
 
