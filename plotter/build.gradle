@@ -22,16 +22,23 @@ android {
         applicationId "org.md2k.plotter"
         minSdkVersion 19
         targetSdkVersion 21
-        versionCode 12
-        versionName '0.4.2'
+        versionCode 13
+        versionName '0.4.3'
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig getSigningConfig()
+            applicationVariants.all { variant ->
+                variant.outputs.each { output ->
+                    output.outputFile = new File(output.outputFile.parent, output.outputFile.name.replace("-release", "${variant.versionName}"))
+                }
+            }
         }
     }
-    productFlavors {
+    lintOptions {
+        abortOnError false
     }
 }
 
