@@ -13,6 +13,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import org.md2k.datakitapi.DataKitAPI;
+import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
 import org.md2k.datakitapi.messagehandler.OnExceptionListener;
 import org.md2k.datakitapi.source.METADATA;
@@ -63,8 +64,6 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        DataKitAPI.getInstance(getActivity().getApplicationContext()).close();
-        dataKitAPI = DataKitAPI.getInstance(getActivity().getApplicationContext());
         try {
             defaultDataSources = Configuration.readDefault();
         } catch (FileNotFoundException ignored) {
@@ -83,14 +82,14 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
         return v;
     }
 
-    private void findDataSource(final String type, final String id, final String platformType, final String platformId) {
+    private void findDataSource(final String type, final String id, final String platformType, final String platformId) throws DataKitException {
         final Platform platform = new PlatformBuilder().setType(platformType).setId(platformId).build();
         ArrayList<DataSourceClient> dataSourceClients = dataKitAPI.find(new DataSourceBuilder().setPlatform(platform).setType(type).setId(id));
         Log.d(TAG,"dataSourceClients="+dataSourceClients.size()+" type="+type+" platformType="+platformType+" platformId="+platformId);
         updateDataSource(dataSourceClients);
     }
 
-    public void findDataSources() {
+    public void findDataSources() throws DataKitException {
         if (defaultDataSources != null) {
             for (int i = 0; i < defaultDataSources.size(); i++)
                 findDataSource(defaultDataSources.get(i).getType(), defaultDataSources.get(i).getId(), defaultDataSources.get(i).getPlatform().getType(), defaultDataSources.get(i).getPlatform().getId());
@@ -102,43 +101,42 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
 
     @Override
     public void onStart() {
-        Log.d(TAG,"onResume()...");
-        ((PreferenceCategory) findPreference("autosense")).removeAll();
-        ((PreferenceCategory) findPreference("phone")).removeAll();
-        ((PreferenceCategory) findPreference("microsoft_band")).removeAll();
-        ((PreferenceCategory) findPreference("other")).removeAll();
+        try {
+            dataKitAPI = DataKitAPI.getInstance(getActivity().getApplicationContext());
+            ((PreferenceCategory) findPreference("autosense")).removeAll();
+            ((PreferenceCategory) findPreference("phone")).removeAll();
+            ((PreferenceCategory) findPreference("microsoft_band")).removeAll();
+            ((PreferenceCategory) findPreference("other")).removeAll();
 
-        if (dataKitAPI == null) {
-            Log.d(TAG, "dataKit Null...");
-            Toast.makeText(getActivity(), "Plotter Stopped. DataKit Unavailable ", Toast.LENGTH_LONG).show();
-        } else {
+            if (dataKitAPI == null) {
+                Log.d(TAG, "dataKit Null...");
+                Toast.makeText(getActivity(), "Plotter Stopped. DataKit Unavailable ", Toast.LENGTH_LONG).show();
+            } else {
 
-            if (dataKitAPI.isConnected())
-                findDataSources();
-            else {
-                dataKitAPI.connect(new OnConnectionListener() {
-                    @Override
-                    public void onConnected() {
-                        Log.d(TAG, "connected...");
-                        findDataSources();
-                    }
-                }, new OnExceptionListener() {
-                    @Override
-                    public void onException(Status status) {
-                        Log.d(TAG, "onException...");
-                        Toast.makeText(getActivity(), "Plotter Stopped. DataKit Error: " + status.getStatusMessage(), Toast.LENGTH_LONG).show();
-                        dataKitAPI.disconnect();
-                        dataKitAPI.close();
-                    }
-                });
+                if (dataKitAPI.isConnected())
+                    findDataSources();
+                else {
+                    dataKitAPI.connect(new OnConnectionListener() {
+                        @Override
+                        public void onConnected() {
+                            Log.d(TAG, "connected...");
+                            try {
+                                findDataSources();
+                            } catch (DataKitException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                }
             }
-            super.onStart();
+        } catch (DataKitException e) {
+            e.printStackTrace();
         }
+        super.onStart();
     }
 
     @Override
     public void onDestroy() {
-        dataKitAPI.close();
         super.onDestroy();
     }
 

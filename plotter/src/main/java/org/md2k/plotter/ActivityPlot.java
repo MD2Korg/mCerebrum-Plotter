@@ -21,12 +21,11 @@ import org.md2k.datakitapi.datatype.DataTypeFloat;
 import org.md2k.datakitapi.datatype.DataTypeFloatArray;
 import org.md2k.datakitapi.datatype.DataTypeInt;
 import org.md2k.datakitapi.datatype.DataTypeIntArray;
+import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
-import org.md2k.datakitapi.messagehandler.OnExceptionListener;
 import org.md2k.datakitapi.messagehandler.OnReceiveListener;
 import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
-import org.md2k.datakitapi.status.Status;
 import org.md2k.utilities.Report.Log;
 
 import java.text.DecimalFormat;
@@ -86,23 +85,31 @@ public class ActivityPlot extends Activity {
         dataSourceClient = getIntent().getParcelableExtra(DataSourceClient.class.getSimpleName());
         preparePlot();
         dataKitAPI = DataKitAPI.getInstance(getApplicationContext());
-        if(!dataKitAPI.isConnected()){
-            dataKitAPI.connect(new OnConnectionListener() {
-                @Override
-                public void onConnected() {
-                    start();
-                }
-            }, new OnExceptionListener() {
-                @Override
-                public void onException(Status status) {
-                    finish();
-                }
-            });
-        }else
-            start();
+        if (!dataKitAPI.isConnected()) {
+            try {
+                dataKitAPI.connect(new OnConnectionListener() {
+                    @Override
+                    public void onConnected() {
+                        try {
+                            start();
+                        } catch (DataKitException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            } catch (DataKitException e) {
+                e.printStackTrace();
+            }
+        } else
+            try {
+                start();
+            } catch (DataKitException e) {
+                e.printStackTrace();
+            }
 
     }
-    void start(){
+
+    void start() throws DataKitException {
         List<DataType> dtList = dataKitAPI.query(dataSourceClient, HISTORY_SIZE);
         for (DataType dataType : dtList) {
             float v[] = null;
@@ -154,17 +161,17 @@ public class ActivityPlot extends Activity {
                     v = new float[value.length];
                     for (int i = 0; i < value.length; i++)
                         v[i] = value[i];
-                }else if (dataType instanceof DataTypeDoubleArray) {
+                } else if (dataType instanceof DataTypeDoubleArray) {
                     double value[] = ((DataTypeDoubleArray) dataType).getSample();
                     v = new float[value.length];
                     for (int i = 0; i < value.length; i++)
                         v[i] = (float) value[i];
-                }else if (dataType instanceof DataTypeDouble) {
-                    double value =  ((DataTypeDouble) dataType).getSample();
+                } else if (dataType instanceof DataTypeDouble) {
+                    double value = ((DataTypeDouble) dataType).getSample();
                     v = new float[1];
                     v[0] = (float) value;
                 }
-                if(v!=null)
+                if (v != null)
                     plotFloatArray(v);
             }
         });
@@ -193,7 +200,14 @@ public class ActivityPlot extends Activity {
     public void onDestroy() {
         Log.d(TAG, "onDestroy()");
         if (dataSourceClient != null)
-            dataKitAPI.unsubscribe(dataSourceClient);
+            try {
+                if (dataKitAPI != null)
+                    dataKitAPI.unsubscribe(dataSourceClient);
+            } catch (DataKitException e) {
+                e.printStackTrace();
+            }
+        if (dataKitAPI != null)
+            dataKitAPI.disconnect();
         redrawer.pause();
 
         redrawer.finish();
