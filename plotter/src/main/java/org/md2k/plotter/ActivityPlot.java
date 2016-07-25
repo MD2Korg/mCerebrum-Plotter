@@ -93,18 +93,18 @@ public class ActivityPlot extends Activity {
                         try {
                             start();
                         } catch (DataKitException e) {
-                            e.printStackTrace();
+                            finish();
                         }
                     }
                 });
             } catch (DataKitException e) {
-                e.printStackTrace();
+                finish();
             }
         } else
             try {
                 start();
             } catch (DataKitException e) {
-                e.printStackTrace();
+                finish();
             }
 
     }

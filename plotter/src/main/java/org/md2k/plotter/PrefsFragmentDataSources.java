@@ -123,20 +123,22 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
                             try {
                                 findDataSources();
                             } catch (DataKitException e) {
-                                e.printStackTrace();
+                                getActivity().finish();
                             }
                         }
                     });
                 }
             }
         } catch (DataKitException e) {
-            e.printStackTrace();
+            getActivity().finish();
         }
         super.onStart();
     }
 
     @Override
     public void onDestroy() {
+        if(dataKitAPI!=null)
+            dataKitAPI.disconnect();
         super.onDestroy();
     }
 
