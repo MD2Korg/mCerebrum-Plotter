@@ -15,7 +15,6 @@ import android.widget.Toast;
 import org.md2k.datakitapi.DataKitAPI;
 import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
-import org.md2k.datakitapi.messagehandler.OnExceptionListener;
 import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceBuilder;
@@ -23,7 +22,6 @@ import org.md2k.datakitapi.source.datasource.DataSourceClient;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.datakitapi.source.platform.PlatformBuilder;
 import org.md2k.datakitapi.source.platform.PlatformType;
-import org.md2k.datakitapi.status.Status;
 import org.md2k.utilities.Report.Log;
 
 import java.io.FileNotFoundException;
@@ -144,7 +142,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
 
     private String getName(DataSource dataSource) {
         String name;
-        if (dataSource.getMetadata().containsKey(METADATA.NAME))
+        if (dataSource.getMetadata() != null && dataSource.getMetadata().containsKey(METADATA.NAME))
             name = dataSource.getMetadata().get(METADATA.NAME);
         else {
             name = dataSource.getType();
@@ -156,7 +154,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     private String getPlatformName(Platform platform) {
         String name;
         if(platform==null) return "Platform - Not Defined";
-        if (platform.getMetadata().containsKey(METADATA.NAME))
+        if (platform.getMetadata() != null && platform.getMetadata().containsKey(METADATA.NAME))
             name = platform.getMetadata().get(METADATA.NAME);
         else {
             name = platform.getType();
@@ -169,6 +167,15 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     private void updateDataSource(ArrayList<DataSourceClient> dataSourceClients) {
         for (int i = 0; i < dataSourceClients.size(); i++) {
             final DataSourceClient dataSourceClient = dataSourceClients.get(i);
+            if (dataSourceClient.getDataSource().getDataDescriptors() == null || dataSourceClient.getDataSource().getDataDescriptors().size() == 0)
+                continue;
+            if (!dataSourceClient.getDataSource().getDataDescriptors().get(0).containsKey(METADATA.MIN_VALUE))
+                continue;
+            try {
+                Integer.parseInt(dataSourceClient.getDataSource().getDataDescriptors().get(0).get(METADATA.MIN_VALUE));
+            } catch (Exception e) {
+                continue;
+            }
 
             Preference preference = new Preference(getActivity());
             preference.setTitle(getName(dataSourceClient.getDataSource()));
