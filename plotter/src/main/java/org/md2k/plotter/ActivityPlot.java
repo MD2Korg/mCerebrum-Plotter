@@ -25,6 +25,7 @@ import org.md2k.datakitapi.exception.DataKitException;
 import org.md2k.datakitapi.messagehandler.OnConnectionListener;
 import org.md2k.datakitapi.messagehandler.OnReceiveListener;
 import org.md2k.datakitapi.source.METADATA;
+import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
 import org.md2k.utilities.Report.Log;
 
@@ -199,18 +200,18 @@ public class ActivityPlot extends Activity {
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy()");
-        if (dataSourceClient != null)
+        if (dataSourceClient != null && dataKitAPI != null)
             try {
-                if (dataKitAPI != null)
                     dataKitAPI.unsubscribe(dataSourceClient);
             } catch (DataKitException e) {
                 e.printStackTrace();
             }
         if (dataKitAPI != null)
             dataKitAPI.disconnect();
-        redrawer.pause();
-
-        redrawer.finish();
+        if (redrawer != null) {
+            redrawer.pause();
+            redrawer.finish();
+        }
         super.onDestroy();
     }
 
@@ -227,19 +228,28 @@ public class ActivityPlot extends Activity {
 
     }
 
-    private String[] getName(ArrayList<HashMap<String, String>> dataDescriptors) {
-        String name[] = new String[dataDescriptors.size()];
-        for (int i = 0; i < dataDescriptors.size(); i++) {
-            if (dataDescriptors.get(i).get(METADATA.NAME) == null)
-                name[i] = "";
-            else name[i] = dataDescriptors.get(i).get(METADATA.NAME);
+    private String[] getName(DataSource dataSource) {
+        ArrayList<HashMap<String, String>> dataDescriptors = dataSource.getDataDescriptors();
+        String name[];
+        if (dataDescriptors == null || dataDescriptors.size() == 0) {
+            name = new String[1];
+            if (dataSource.getMetadata() != null && dataSource.getMetadata().containsKey(METADATA.NAME))
+                name[0] = dataSource.getMetadata().get(METADATA.NAME);
+            else name[0] = dataSource.getType();
+        } else {
+            name = new String[dataDescriptors.size()];
+            for (int i = 0; i < dataDescriptors.size(); i++) {
+                if (dataDescriptors.get(i).get(METADATA.NAME) == null)
+                    name[i] = "";
+                else name[i] = dataDescriptors.get(i).get(METADATA.NAME);
+            }
         }
         return name;
     }
 
     private int getMinValue(ArrayList<HashMap<String, String>> dataDescriptors) {
         int minValue = Integer.MAX_VALUE;
-        for (int i = 0; i < dataDescriptors.size(); i++) {
+        for (int i = 0; dataDescriptors != null && i < dataDescriptors.size(); i++) {
             if (dataDescriptors.get(i).get(METADATA.MIN_VALUE) == null) continue;
             if (Integer.valueOf(dataDescriptors.get(i).get(METADATA.MIN_VALUE)) < minValue)
                 minValue = Integer.parseInt(dataDescriptors.get(i).get(METADATA.MIN_VALUE));
@@ -249,7 +259,7 @@ public class ActivityPlot extends Activity {
 
     private int getMaxValue(ArrayList<HashMap<String, String>> dataDescriptors) {
         int maxValue = Integer.MIN_VALUE;
-        for (int i = 0; i < dataDescriptors.size(); i++) {
+        for (int i = 0; dataDescriptors != null && i < dataDescriptors.size(); i++) {
             if (dataDescriptors.get(i).get(METADATA.MAX_VALUE) == null) continue;
             if (Integer.valueOf(dataDescriptors.get(i).get(METADATA.MAX_VALUE)) > maxValue)
                 maxValue = Integer.parseInt(dataDescriptors.get(i).get(METADATA.MAX_VALUE));
@@ -262,7 +272,7 @@ public class ActivityPlot extends Activity {
         aprHistoryPlot = (XYPlot) findViewById(R.id.aprHistoryPlot);
         aprHistoryPlot.setTitle(dataSourceClient.getDataSource().getType());
         historySeries = new ArrayList<>();
-        String names[] = getName(dataSourceClient.getDataSource().getDataDescriptors());
+        String names[] = getName(dataSourceClient.getDataSource());
         int minValue = getMinValue(dataSourceClient.getDataSource().getDataDescriptors());
         int maxValue = getMaxValue(dataSourceClient.getDataSource().getDataDescriptors());
         if (minValue == Integer.MAX_VALUE || maxValue == Integer.MIN_VALUE || minValue == maxValue)
