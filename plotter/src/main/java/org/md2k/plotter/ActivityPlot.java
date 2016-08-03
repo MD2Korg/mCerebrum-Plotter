@@ -202,7 +202,7 @@ public class ActivityPlot extends Activity {
         Log.d(TAG, "onDestroy()");
         if (dataSourceClient != null && dataKitAPI != null)
             try {
-                    dataKitAPI.unsubscribe(dataSourceClient);
+                dataKitAPI.unsubscribe(dataSourceClient);
             } catch (DataKitException e) {
                 e.printStackTrace();
             }
@@ -249,20 +249,28 @@ public class ActivityPlot extends Activity {
 
     private int getMinValue(ArrayList<HashMap<String, String>> dataDescriptors) {
         int minValue = Integer.MAX_VALUE;
-        for (int i = 0; dataDescriptors != null && i < dataDescriptors.size(); i++) {
-            if (dataDescriptors.get(i).get(METADATA.MIN_VALUE) == null) continue;
-            if (Integer.valueOf(dataDescriptors.get(i).get(METADATA.MIN_VALUE)) < minValue)
-                minValue = Integer.parseInt(dataDescriptors.get(i).get(METADATA.MIN_VALUE));
+        try {
+            for (int i = 0; dataDescriptors != null && i < dataDescriptors.size(); i++) {
+                if (dataDescriptors.get(i).get(METADATA.MIN_VALUE) == null) continue;
+                if (Integer.valueOf(dataDescriptors.get(i).get(METADATA.MIN_VALUE)) < minValue)
+                    minValue = Integer.parseInt(dataDescriptors.get(i).get(METADATA.MIN_VALUE));
+            }
+        } catch (Exception e) {
+            minValue = Integer.MAX_VALUE;
         }
         return minValue;
     }
 
     private int getMaxValue(ArrayList<HashMap<String, String>> dataDescriptors) {
         int maxValue = Integer.MIN_VALUE;
-        for (int i = 0; dataDescriptors != null && i < dataDescriptors.size(); i++) {
-            if (dataDescriptors.get(i).get(METADATA.MAX_VALUE) == null) continue;
-            if (Integer.valueOf(dataDescriptors.get(i).get(METADATA.MAX_VALUE)) > maxValue)
-                maxValue = Integer.parseInt(dataDescriptors.get(i).get(METADATA.MAX_VALUE));
+        try {
+            for (int i = 0; dataDescriptors != null && i < dataDescriptors.size(); i++) {
+                if (dataDescriptors.get(i).get(METADATA.MAX_VALUE) == null) continue;
+                if (Integer.valueOf(dataDescriptors.get(i).get(METADATA.MAX_VALUE)) > maxValue)
+                    maxValue = Integer.parseInt(dataDescriptors.get(i).get(METADATA.MAX_VALUE));
+            }
+        } catch (Exception e) {
+            maxValue = Integer.MIN_VALUE;
         }
         return maxValue;
     }
