@@ -104,6 +104,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
             ((PreferenceCategory) findPreference("autosense")).removeAll();
             ((PreferenceCategory) findPreference("phone")).removeAll();
             ((PreferenceCategory) findPreference("microsoft_band")).removeAll();
+            ((PreferenceCategory) findPreference("motion_sense")).removeAll();
             ((PreferenceCategory) findPreference("other")).removeAll();
 
             if (dataKitAPI == null) {
@@ -204,7 +205,9 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
             else if(PlatformType.PHONE.equals(dataSourceClient.getDataSource().getPlatform().getType()))
                 preferenceCategory = (PreferenceCategory) findPreference("phone");
             else if(PlatformType.MICROSOFT_BAND.equals(dataSourceClient.getDataSource().getPlatform().getType()))
-                preferenceCategory = (PreferenceCategory) findPreference("microsoft_band");
+                preferenceCategory = (PreferenceCategory) findPreference("motion_sense");
+            else if (PlatformType.MOTION_SENSE.equals(dataSourceClient.getDataSource().getPlatform().getType()))
+                preferenceCategory = (PreferenceCategory) findPreference("motion_sense");
             preferenceCategory.addPreference(preference);
         }
     }

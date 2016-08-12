@@ -6,6 +6,9 @@
         android:key="autosense"
         android:title="AutoSense Sensors"/>
     <PreferenceCategory
+        android:key="motion_sense"
+        android:title="MotionSense Sensors" />
+    <PreferenceCategory
         android:key="microsoft_band"
         android:title="MicrosoftBand Sensors"/>
     <PreferenceCategory
