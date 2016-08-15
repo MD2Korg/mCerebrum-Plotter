@@ -22,7 +22,6 @@ import org.md2k.datakitapi.source.datasource.DataSourceClient;
 import org.md2k.datakitapi.source.platform.Platform;
 import org.md2k.datakitapi.source.platform.PlatformBuilder;
 import org.md2k.datakitapi.source.platform.PlatformType;
-import org.md2k.utilities.Report.Log;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -56,7 +55,6 @@ import java.util.ArrayList;
 
 public class PrefsFragmentDataSources extends PreferenceFragment {
     private static final String TAG = PrefsFragmentDataSources.class.getSimpleName();
-    private DataKitAPI dataKitAPI;
     private ArrayList<DataSource> defaultDataSources;
 
     @Override
@@ -82,8 +80,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
 
     private void findDataSource(final String type, final String id, final String platformType, final String platformId) throws DataKitException {
         final Platform platform = new PlatformBuilder().setType(platformType).setId(platformId).build();
-        ArrayList<DataSourceClient> dataSourceClients = dataKitAPI.find(new DataSourceBuilder().setPlatform(platform).setType(type).setId(id));
-        Log.d(TAG,"dataSourceClients="+dataSourceClients.size()+" type="+type+" platformType="+platformType+" platformId="+platformId);
+        ArrayList<DataSourceClient> dataSourceClients = DataKitAPI.getInstance(getActivity()).find(new DataSourceBuilder().setPlatform(platform).setType(type).setId(id));
         updateDataSource(dataSourceClients);
     }
 
@@ -100,15 +97,13 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
     @Override
     public void onStart() {
         try {
-            dataKitAPI = DataKitAPI.getInstance(getActivity().getApplicationContext());
             ((PreferenceCategory) findPreference("autosense")).removeAll();
             ((PreferenceCategory) findPreference("phone")).removeAll();
             ((PreferenceCategory) findPreference("microsoft_band")).removeAll();
             ((PreferenceCategory) findPreference("motion_sense")).removeAll();
             ((PreferenceCategory) findPreference("other")).removeAll();
-
+            DataKitAPI dataKitAPI = DataKitAPI.getInstance(getActivity());
             if (dataKitAPI == null) {
-                Log.d(TAG, "dataKit Null...");
                 Toast.makeText(getActivity(), "Plotter Stopped. DataKit Unavailable ", Toast.LENGTH_LONG).show();
             } else {
 
@@ -118,7 +113,6 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
                     dataKitAPI.connect(new OnConnectionListener() {
                         @Override
                         public void onConnected() {
-                            Log.d(TAG, "connected...");
                             try {
                                 findDataSources();
                             } catch (DataKitException e) {
@@ -136,8 +130,7 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
 
     @Override
     public void onDestroy() {
-        if(dataKitAPI!=null)
-            dataKitAPI.disconnect();
+        DataKitAPI.getInstance(getActivity()).disconnect();
         super.onDestroy();
     }
 
@@ -187,8 +180,10 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
                     if(dataSourceClient.getDataSource().getDataDescriptors()==null || dataSourceClient.getDataSource().getDataDescriptors().size()==0 ||
                     !dataSourceClient.getDataSource().getDataDescriptors().get(0).containsKey(METADATA.MIN_VALUE))
                         Toast.makeText(getActivity(),"Error: MIN_VALUE & MAX_VALUE are not defined in DataDescriptor...Not possible to plot",Toast.LENGTH_LONG).show();
-                    else
+                    else {
+                        DataKitAPI.getInstance(getActivity()).disconnect();
                         runPlot(dataSourceClient);
+                    }
                     return false;
                 }
             });
@@ -229,11 +224,5 @@ public class PrefsFragmentDataSources extends PreferenceFragment {
                 }
             });
         }
-    }
-    @Override
-    public void onStop() {
-        Log.d(TAG,"onStop()...");
-        dataKitAPI.disconnect();
-        super.onStop();
     }
 }

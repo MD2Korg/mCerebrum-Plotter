@@ -27,7 +27,6 @@ import org.md2k.datakitapi.messagehandler.OnReceiveListener;
 import org.md2k.datakitapi.source.METADATA;
 import org.md2k.datakitapi.source.datasource.DataSource;
 import org.md2k.datakitapi.source.datasource.DataSourceClient;
-import org.md2k.utilities.Report.Log;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -69,7 +68,6 @@ public class ActivityPlot extends Activity {
     private static final String TAG = ActivityPlot.class.getSimpleName();
     private ArrayList<SimpleXYSeries> historySeries;
     private DataSourceClient dataSourceClient;
-    private DataKitAPI dataKitAPI;
     private XYPlot aprHistoryPlot = null;
     private Redrawer redrawer;
 
@@ -79,39 +77,37 @@ public class ActivityPlot extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        setContentView(R.layout.activity_plot);
-        dataSourceClient = getIntent().getParcelableExtra(DataSourceClient.class.getSimpleName());
-        preparePlot();
-        dataKitAPI = DataKitAPI.getInstance(getApplicationContext());
-        if (!dataKitAPI.isConnected()) {
-            try {
-                dataKitAPI.connect(new OnConnectionListener() {
-                    @Override
-                    public void onConnected() {
-                        try {
-                            start();
-                        } catch (DataKitException e) {
-                            finish();
-                        }
+        try {
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                    WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            setContentView(R.layout.activity_plot);
+            dataSourceClient = getIntent().getParcelableExtra(DataSourceClient.class.getSimpleName());
+            preparePlot();
+            DataKitAPI.getInstance(ActivityPlot.this).connect(new OnConnectionListener() {
+                @Override
+                public void onConnected() {
+                    try {
+                        start();
+                    } catch (DataKitException e) {
+                        finish();
                     }
-                });
-            } catch (DataKitException e) {
-                finish();
-            }
-        } else
-            try {
-                start();
-            } catch (DataKitException e) {
-                finish();
-            }
+                }
+            });
+        } catch (Exception e) {
+            finish();
+        }
 
     }
 
+    @Override
+    public void onBackPressed() {
+        close();
+        super.onBackPressed();
+    }
+
     void start() throws DataKitException {
-        List<DataType> dtList = dataKitAPI.query(dataSourceClient, HISTORY_SIZE);
+        List<DataType> dtList = DataKitAPI.getInstance(ActivityPlot.this).query(dataSourceClient, HISTORY_SIZE);
         for (DataType dataType : dtList) {
             float v[] = null;
             if (dataType instanceof DataTypeInt) {
@@ -142,8 +138,7 @@ public class ActivityPlot extends Activity {
             if (v != null)
                 plotFloatArray(v);
         }
-
-        dataKitAPI.subscribe(dataSourceClient, new OnReceiveListener() {
+        DataKitAPI.getInstance(ActivityPlot.this).subscribe(dataSourceClient, new OnReceiveListener() {
             @Override
             public void onReceived(DataType dataType) {
                 float v[] = null;
@@ -192,19 +187,15 @@ public class ActivityPlot extends Activity {
             try {
                 historySeries.get(i).addLast(null, samples[i]);
             } catch (ArrayIndexOutOfBoundsException e) {
-                Log.d("Plotter", "Index out of bounds" + e.getStackTrace().toString());
             }
     }
 
-
-    @Override
-    public void onDestroy() {
-        Log.d(TAG, "onDestroy()");
+    private void close() {
+        DataKitAPI dataKitAPI = DataKitAPI.getInstance(ActivityPlot.this);
         if (dataSourceClient != null && dataKitAPI != null)
             try {
                 dataKitAPI.unsubscribe(dataSourceClient);
             } catch (DataKitException e) {
-                e.printStackTrace();
             }
         if (dataKitAPI != null)
             dataKitAPI.disconnect();
@@ -212,6 +203,12 @@ public class ActivityPlot extends Activity {
             redrawer.pause();
             redrawer.finish();
         }
+    }
+
+
+    @Override
+    public void onDestroy() {
+        close();
         super.onDestroy();
     }
 
