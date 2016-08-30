@@ -1,14 +1,11 @@
 language: android
-
 before_cache:
 - rm -f $HOME/.gradle/caches/modules-2/modules-2.lock
-
 cache:
   directories:
   - "$HOME/.gradle/caches/"
   - "$HOME/.gradle/wrapper/"
   - "$HOME/.m2/"
-
 android:
   components:
   - platform-tools
@@ -18,28 +15,33 @@ android:
   - extra-android-support
   - extra-android-m2repository
 
-#  - sys-img-armeabi-v7a-android-23
-  - sys-img-armeabi-v7a-android-21
-#  - sys-img-x86-android-23
-  - sys-img-x86-android-21
-
 before_install:
+- openssl aes-256-cbc -K $encrypted_81a399602a9c_key -iv $encrypted_81a399602a9c_iv -in plotter/release-key.keystore.enc -out plotter/release-key.keystore -d
 - git clone https://github.com/MD2Korg/mCerebrum-Utilities.git /home/travis/build/MD2Korg/mCerebrum-Utilities
 - git clone https://github.com/MD2Korg/mCerebrum-DataKitAPI.git /home/travis/build/MD2Korg/mCerebrum-DataKitAPI
 
-before_script:
-  - echo no | android create avd --force -n test -t android-21 --abi armeabi-v7a
-  - emulator -avd test -no-skin -no-audio -no-window &
-  - android-wait-for-emulator
-  - adb shell input keyevent 82 &
-
-#env:
-#  global:
-#    - ADB_INSTALL_TIMEOUT=8
+script:
+- ./gradlew assembleRelease
 
 notifications:
   slack:
     secure: drSaLEsi+xlUePocfcDTLO9S/5XSBsnR6h7OzPhU4xsO+mBjH3qb93Qe4Jwzz9IZQ0UFzDcmu7ObHOksd6fDgvnIcmznowuABs7QFSF5dodF3eXuF/NJc5J3SqptrOZhlPhGQJcan8siBpLw5z+UBal9ORQPJ8e0SN2bxvRH30GzOlaBOrS0w9hGmtoIY/c8ZIjxGn7BK+b7qL6pNqD4tTg3BImh4Q8Q0icjlT/Pe4kq9pJuYP+Ph4B6THE5PY6W5kmaPSZT2wk72tbNa+1f0lxkO106+Fi4X/qEf6BNQ/2ufUi8cGyjYhu8ZRfGEQVwmwtk0goZvPRyxzHx94tc0/utmW+ZvEEdXOTfs1cE84xGvsYOmoMaMacJC0DPSRTJ269LnmUlTYZoZPyEaqEJp0vFLnS7ZwYcYBzEQ/coS1zKOEWX5a29ijvCOxeFGWF9NcEvaGfpoP/RiLJXjguKfrQLQiek+xkzmubSRWpP9LFoqtXwVMxle/zi/99Ry02nvmEUSK3BbAM57LBnrT+0lYDC/ocxTpQ3Gvd52qFoZBzb8Fshu2+3UYCSCHROkOdHtBmBvRKE4LiTz8/6xtzeL1n+1RSrbN13tbk01gkNIHagSLWUildtFkvok2pJXawslE88ZhRzOOK8ViWFenbhca6sPfvBebXccTJKnzi4GQc=
-    on_success: change  # options: [always|never|change] default: always
-    on_failure: always  # options: [always|never|change] default: always
-    on_start: false     # default: false
+    on_success: change
+    on_failure: always
+    on_start: false
+deploy:
+  file_glob: true
+  provider: releases
+  api_key:
+    secure: 8dmcb+/WOg2V8x7k2LQS3ThYrhJKYi7Ki42z5aev4k6LnRbIh6AjquO62La6PupNKklJa92qKRjHxwCMJe8Jrh6R0LDgoR5l9lzZTxZahZRyj58cB7Si2/81nxN+QdOFmxnPSG0TIfKDNv8f52schGPzJlVCRilcUQripTHYJfPt5dzD42dlg+CnUW3hCeNrfJc/d1OoCW/d8eyiKEc/YYd3I7HhD+2UrxIXviXDvnE2De5MbSjmWhP8uwv7OdB4rizvhXGWrxyaXlysE7MxyWWOjqygftO2ksw2DKIoHGkXFgd/7ESspnzTi4SUjfqH7zSK6hXwdf9/rMOIUJLfcZdeY+obyxqpBeIYkCyx2kL2LV8ZMM/jKUq5e8SgH1UUsJtW3YFarVBN+Y9lMHbtFKFIMpG5hc2mqQNZpseMd5YVZcmL+MiBItAtsWlMKSQN3oYDxNxNBfiUD1Kc7GudskP53nGfVnuiy99o4sxCMau74f3yDg18TQk/qXGcGZCOVd/w3Nb/4O+8IUz8yV+PtOczpE0VNPNBmKXdLY3id3kxkEJwWvpzoZJ5pHu8JKhTQ7b/8FgXPQDu9rTRqPO6s8AHJB7F4Xcjc7BeWY/NU3xxrC/cuPA9lcHlWHvRrw/qlA0M9wluNtA6rRDdxDNx4CbZ0xggONUTDKyRH88h+x8=
+  file: plotter/build/outputs/apk/plotter*.*.*.apk
+  on:
+    repo: MD2Korg/mCerebrum-Plotter
+    tags: true
+  skip_cleanup: true
+env:
+  global:
+  - secure: A5lXY7H6JLtOwnXrbgeP+tvfMbANnKpXFLuJBOw3P+rs9rE06rx49wg7ufkOrMWK4o1kVrde3M+JYGp6zNrsIJYqFm91XO4pXgI/oGt30fsttK9F7s5UOoWsgu6Pg7bGBtNq7Rd+exifYF8gObBq8wg/h1Jd6Xi459Xp3AameQemUvYwJorGKqcuaGkdr2Wn1ZmyN1gpOZxDMWDro6J7SSzIRkJ7Hs2hc5J08BN0tjwQ1pJ9DoOPB7StNVOLxPw3ujxuofr0tgTOaNElECsREIpaoVR2xpEHft9V0UsMVXNh3lrdEw3BNR4wjR1jz7Icli7lT5tg3yjun6stvq+jmB2DzeCwUUdb89fl0u7ybnk3J+UII85p3GwZA120R+ZrI32UophmG1tY7e1O2xlLM5K51RVXqBsYF8vE3lKbPc9wIpZU+G+LKGMIoNHGveu1eX165xKzBeZI/4pIVu0gPLc/O0nu1k34OtglCFyvDPYlWwUf5/CWLhQvhiBKhdRB2GMWItLDjuRUdxuV9+IAX81AAPqUG/8ckRmerh2kg4CnI6xsDQTuC+TDVE+J3GK3hjEDgIb6BEvL4wjoHegiJ360dC+n1FVM9vVjjdfqzGutb7UqUxky+mrnJbsQaSI6VSHUIQ95xoRNKMX5hqsmncQ/UMN3r/nAxSvgIpmjRSY=
+  - secure: LkIG94TEyOaP2MEULaqgIpSEBoci9O3jtbF0gCYMy3wWn/1wxbPZGN9NmWzLgpuOuKCrXY1Dqfwq/A5eFlBLLcLwqOcc7fFYUHN2lCm7I/qpawz087pcj3V2ad5NTEIY5OR9rF/UdzLC7elmbvu3oiGdnujc7cmMRFYOnVPJ0zGKafZEiUOr+aMDSvP8577CZWfPym62FejhbUmhxXq6mSoBx/dO4b18JgPs8Uc+9jNXJ9RuZjZJ3ZXaxiZSByMIzbfOfNgX7iGq6HSv82/LrHMIT08mSjMptw2AkebPNRYj5fEkl10QOB0Zmmls9zxovyqGqHeB8N5KSuwOJ/DdVy1EqoLiyrh2jF5BS/YpKlS5xuBc7SX5JlqcBVPOS9gNgO1SvNCIo4ohtyhFV4d2SKexXu+z3oOhA6bMDxIRLtx4oWidoHn/xTKwp6cCmHOyGUcfw09V24oQdPzmKU7Q2AzMhguleOvwYzNcRaL3CvrUo4tO3c8TzdRavnwnGvFUrfARDde6Vf79EbwPpircJzrhrl7l3bR4C6E+V+QN3POfAg4ayo85Xi0GNvzYOuTtPNKUB79yN53jtieY+uvIAxOa2P5jbbdgF0tXJcKwyiksXpXsd+xAL1aYELrGrDXM7Cfdtrcbo1hwEhw+pGAs95EE4ipERQAaklRFx4NfNYU=
+  - secure: 5SeR+Fr0zM8UsEnLsWWQwEG02N4bJERBOowvDCgcbbKalGkHMsznXIsCTIhgPP7HV6m+d4pGwCkWXgdrELW2PHqU0q4eTBIzfjgT48j2xv+XkwTDehDVrXfDEGFCtmPtehg/Qgw1F5vzuocyA2B07QH5tuUXOWI2bx8R0A2O6QF/L7dSrmUI87j7J8jiSBg7MtE5kuRrjjdgTlIfOXf4C3oj3gtV+Xikt0VACHCdvoD6dZezA/JlrXGYFP6jt8aUiXxfz3iucM3JvW9K0ZweDQxp8bY+MkwW4alVglIw3So3DRhY6b+Z2GFTur0TK7kkj5UtZiEiaFTw3JpQCXh8FXGCptVVOPkUgTFb+SEi0fmSO8VANa5WibhWDdY8la6PeO4iG0boPSZe26LK0FCqSMWzjkRGFySnw7Lf1TCI6DnIjp6YicDw4YuWwuL2LUp8gXecz8Dzx0ohRd6e20yNh8g6qJWebzl5Y325WHmUto/0O58KNlkK1S04jnQ2inSBylOIKyKjAQ01+rTalVubwyZ6ngQJAJoAVFvcP21E564XRWZ8/2TVJl8UV8JVilSbWZXIxIpPiOZXAI0n8VBw4sGh9vGk6gPyPE/uG9Mv8HGVKfHp7t/zUr59lh8+8LKhjL9b2GNRs5GDG2z69DJHaX3nX0fAYnd3YpS+AZ0Kjy4=
+  - secure: 8K9w1hAg4oFtoHL+1C29wvVGYpDoWoEqYrYx7Lgjq4El7KAM7zxWHf+z19K+bSn7nKrlgv6oCYKh/2hFagPqrqbdhXKXIXlO+GgYnx13HnGkV8EohF2z/EWBFPZL6nPbuCettosfjui0WX3pREaA7ENSsWCreQ91RnnJ5oGPII0w+i8eGQoDaUKKqZunXVcepWIigvYouBjbS1yzJ6L3ejHv6l+piQpOy3QSk7UG7dYl9Et5KsgGRG6VkQufWoemRs6kE+0nvigd0zWOV2SrJscJBGRYFZVXB9BR9sqsKropg7qeNZsBpaqSzOBJunXEvria+S1fCMj/DhmBrv0HqBfjkMVlZkodtaVH7k5ARcQ5d/aPzWXOaetWWWPIcqepEic6ijbO9txr35Ekb9lGhUnj0WXXmgm8nxGEpu00yNTEiYcIq65VcnUL8PnKzA8lJLnG9NsXhcx5NLS2bJuSxl19h08JDTb8VkwxmQjvhhgVTboJB0ZtrkHV7BuIZzyGXh3D38PyBRXmJF0XayHNFCHu4jl3GY7xJJbucPaeequomMtV9eJ43KZNKi3MszKi45LBdpbi5QXHcsAX0XKV3+sLbYm2RWDmYyoghYIy929XQSGbxC8nfjNzfl7OYaEXUn5B9l7PXbgnVwb0dHEloxudfM8VbRsV3K+aQnZSd80=
