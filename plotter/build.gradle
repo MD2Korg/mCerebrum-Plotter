@@ -1,4 +1,4 @@
-version = '1.0.6'
+version = '1.0.7'
 buildscript {
     repositories {
         maven { url 'https://maven.fabric.io/public' }
