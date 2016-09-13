@@ -6,11 +6,14 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 
+import org.md2k.datakitapi.messagehandler.ResultCallback;
 import org.md2k.utilities.UI.ActivityAbout;
 import org.md2k.utilities.UI.ActivityCopyright;
+import org.md2k.utilities.permission.PermissionInfo;
 
 import io.fabric.sdk.android.Fabric;
 
@@ -50,9 +53,20 @@ public class ActivityMain extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         Fabric.with(this, new Crashlytics());
         setContentView(R.layout.activity_main);
-        getFragmentManager().beginTransaction().replace(R.id.layout_preference_fragment,
-                new PrefsFragmentDataSources()).commit();
+        PermissionInfo permissionInfo = new PermissionInfo();
+        permissionInfo.getPermissions(this, new ResultCallback<Boolean>() {
+            @Override
+            public void onResult(Boolean result) {
+                if (!result) {
+                    Toast.makeText(getApplicationContext(), "!PERMISSION DENIED !!! Could not continue...", Toast.LENGTH_SHORT).show();
+                    finish();
+                } else {
 
+                    getFragmentManager().beginTransaction().replace(R.id.layout_preference_fragment,
+                            new PrefsFragmentDataSources()).commit();
+                }
+            }
+        });
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayShowTitleEnabled(true);
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
